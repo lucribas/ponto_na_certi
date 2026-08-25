@@ -1,0 +1,27 @@
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+.env*
+!.env.example
+.idea/
+.vscode/
+artifacts/
+build/
+coverage/
+dist/
+dist-dev/
+release-site/
+node_modules/
+playwright-report/
+test-results/
+
+# Configuração e saídas locais da automação legada.
+apps/standalone/ahgora/
+apps/standalone/config.sh
+apps/standalone/log/
+apps/standalone/source/apontamentos_channel_*.csv
+
+# Chave privada local usada para manter o ID da extensão Chrome.
+apps/chrome-extension/.local-keys/

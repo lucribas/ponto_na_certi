@@ -1,0 +1,642 @@
+{
+  "version": 1,
+  "id": "reunioes-por-area",
+  "name": "Reuniões por área",
+  "description": "Orientações agrupadas por área e contexto de reunião.",
+  "sourceFile": "Apontamento  Channel - Reuniões - Página1.csv",
+  "itemCount": 27,
+  "items": [
+    {
+      "id": "reunioes-por-area:007:certi-informa",
+      "sourceLine": 7,
+      "group": "Reuniões Institucionais CERTI",
+      "event": "CERTI Informa",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Projetos",
+        "target": "F01C0078.0 Parada de Aprendizagem",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "1.2 CERTI informa"
+      },
+      "channel": {
+        "project": "F01C0078.0 Parada de Aprendizagem",
+        "activityType": "Nenhum",
+        "activity": "1.2 CERTI informa",
+        "task": "Nenhum",
+        "projectSource": "FIXED",
+        "activitySource": "FIXED"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:008:certi-tech",
+      "sourceLine": 8,
+      "group": "Reuniões Institucionais CERTI",
+      "event": "CERTI Tech",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Projetos",
+        "target": "F01C0078.0 Parada de Aprendizagem",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "1.1 CERTI Tech"
+      },
+      "channel": {
+        "project": "F01C0078.0 Parada de Aprendizagem",
+        "activityType": "Nenhum",
+        "activity": "1.1 CERTI Tech",
+        "task": "Nenhum",
+        "projectSource": "FIXED",
+        "activitySource": "FIXED"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:009:academia-certi",
+      "sourceLine": 9,
+      "group": "Reuniões Institucionais CERTI",
+      "event": "Academia CERTI",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Projetos",
+        "target": "F01C0078.0 Parada de Aprendizagem",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "1.3 Academia CERTI"
+      },
+      "channel": {
+        "project": "F01C0078.0 Parada de Aprendizagem",
+        "activityType": "Nenhum",
+        "activity": "1.3 Academia CERTI",
+        "task": "Nenhum",
+        "projectSource": "FIXED",
+        "activitySource": "FIXED"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:010:certi-fatos-e-dados",
+      "sourceLine": 10,
+      "group": "Reuniões Institucionais CERTI",
+      "event": "CERTI Fatos e Dados",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Projetos",
+        "target": "F01C0078.0 Parada de Aprendizagem",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "1.4 CERTI fatos e dados"
+      },
+      "channel": {
+        "project": "F01C0078.0 Parada de Aprendizagem",
+        "activityType": "Nenhum",
+        "activity": "1.4 CERTI fatos e dados",
+        "task": "Nenhum",
+        "projectSource": "FIXED",
+        "activitySource": "FIXED"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:011:certi-reflete",
+      "sourceLine": 11,
+      "group": "Reuniões Institucionais CERTI",
+      "event": "CERTI Reflete",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Projetos",
+        "target": "F01C0078.0 Parada de Aprendizagem",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "1.5 CERTI Reflete"
+      },
+      "channel": {
+        "project": "F01C0078.0 Parada de Aprendizagem",
+        "activityType": "Nenhum",
+        "activity": "1.5 CERTI Reflete",
+        "task": "Nenhum",
+        "projectSource": "FIXED",
+        "activitySource": "FIXED"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:016:lightning-talk",
+      "sourceLine": 16,
+      "group": "Reuniões gerais CDM",
+      "event": "Lightning Talk",
+      "kind": "AD_HOC",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Lightning Talk",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "13. Formação/Capacitação",
+        "field5": "99601 - Lightning Talk"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "13. Formação/Capacitação",
+        "activityType": "99601 - Lightning Talk"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:017:reuniao-geral-cdm",
+      "sourceLine": 17,
+      "group": "Reuniões gerais CDM",
+      "event": "Reunião Geral CDM",
+      "kind": "AD_HOC",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião Geral CDM. Exemplo: Reunião Geral CDM&ICS Resultados 2o. Trimestre 2023.",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "48. Reunião de Gestão do CRIT",
+        "field5": "Não preencher"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "48. Reunião de Gestão do CRIT",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:018:reuniao-coordenacao-propostas-cdm",
+      "sourceLine": 18,
+      "group": "Reuniões gerais CDM",
+      "event": "Reunião Coordenação Propostas CDM",
+      "kind": "AD_HOC",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião semanal de propostas",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "9. Reunião",
+        "field5": "99430 - Prospecção de Negócios Embrapii"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "9. Reunião",
+        "activityType": "99430 - Prospecção de Negócios Embrapii"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:019:reuniao-gestao-integrada",
+      "sourceLine": 19,
+      "group": "Reuniões gerais CDM",
+      "event": "Reunião Gestão Integrada",
+      "kind": "AD_HOC",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião de gestão integrada",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "9. Reunião",
+        "field5": null
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "9. Reunião",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:020:reuniao-de-apresentacao-de-resultados",
+      "sourceLine": 20,
+      "group": "Reuniões gerais CDM",
+      "event": "Reunião de apresentação de Resultados",
+      "kind": "AD_HOC",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": null,
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "48. Reunião de Gestão do CRIT",
+        "field5": null
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "48. Reunião de Gestão do CRIT",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:026:bi-weekly-software",
+      "sourceLine": 26,
+      "group": "CDM - Software",
+      "event": "Bi-Weekly - Software",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião da área de SW",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "Respectivo projeto",
+        "field4": "-",
+        "field5": "Atividade corrente"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:027:1x1-reunioes-de-feedback",
+      "sourceLine": 27,
+      "group": "CDM - Software",
+      "event": "1x1 & reuniões de Feedback",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião semanal do board técnico SW",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "Respectivo projeto",
+        "field4": "-",
+        "field5": "Atividade corrente"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:028:design-review",
+      "sourceLine": 28,
+      "group": "CDM - Software",
+      "event": "Design Review",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião de Design Review",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "Respectivo projeto",
+        "field4": "-",
+        "field5": "Atividade relacionada"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:034:bi-weekly-embarcados",
+      "sourceLine": 34,
+      "group": "CDM - Embarcados",
+      "event": "Bi-Weekly Embarcados",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião de acompanhamento bi-semanal de embarcados",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "Respectivo projeto",
+        "field4": null,
+        "field5": "Atividade corrente"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:035:1x1-reunioes-de-feedback",
+      "sourceLine": 35,
+      "group": "CDM - Embarcados",
+      "event": "1x1 & reuniões de Feedback",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "1x1\nou\nReunião de feedback",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "Respectivo projeto",
+        "field4": null,
+        "field5": "Atividade corrente"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:036:design-review",
+      "sourceLine": 36,
+      "group": "CDM - Embarcados",
+      "event": "Design Review",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião de Design Review",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "Respectivo projeto",
+        "field4": "-",
+        "field5": "Atividade relacionada"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:042:reuniao-quinzenal-ux",
+      "sourceLine": 42,
+      "group": "CDM - Design",
+      "event": "Reunião quinzenal UX",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": "Reunião quinzenal de Design",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "CERTI",
+        "field4": "9. Reunião",
+        "field5": "Atividade do projeto em execução no momento"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "9. Reunião",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:043:design-talk",
+      "sourceLine": 43,
+      "group": "CDM - Design",
+      "event": "Design talk",
+      "kind": "AD_HOC",
+      "durationHint": null,
+      "comment": "Design Talk",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "13. Formação/Capacitação",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "13. Formação/Capacitação",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:044:reuniao-mensal-de-design-da-certi",
+      "sourceLine": 44,
+      "group": "CDM - Design",
+      "event": "Reunião mensal de Design da Certi",
+      "kind": "AD_HOC",
+      "durationHint": null,
+      "comment": "Reunião mensal de design",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "13. Formação/Capacitação",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "13. Formação/Capacitação",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:050:reuniao-quinzenal-da-area-de-ia",
+      "sourceLine": 50,
+      "group": "CDM - Data Science / IA",
+      "event": "Reunião quinzenal da área de IA",
+      "kind": "AD_HOC",
+      "durationHint": "A duração da reunião. Quem levar mais tempo para preparação de aprresentações deve apontar o tempo correspondente.",
+      "comment": "Reunião quinzenal de área de IA",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "13. Formação/Capacitação",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "13. Formação/Capacitação",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:051:design-review",
+      "sourceLine": 51,
+      "group": "CDM - Data Science / IA",
+      "event": "Design Review",
+      "kind": "PROJECT",
+      "durationHint": "[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento]",
+      "comment": "Reunião de Design Review",
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "CERTI",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "Atividade relacionada"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:052:ia-na-certi",
+      "sourceLine": 52,
+      "group": "CDM - Data Science / IA",
+      "event": "IA na CERTI",
+      "kind": "AD_HOC",
+      "durationHint": "A duração da reunião. Quem levar mais tempo para preparação de aprresentações deve apontar o tempo correspondente.",
+      "comment": "IA na CERTI",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "13. Formação/Capacitação",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "13. Formação/Capacitação",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:055:reuniao-periodica-de-area",
+      "sourceLine": 55,
+      "group": "Engenharia de Sistemas",
+      "event": "Reunião periódica de área",
+      "kind": "PROJECT",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Respectivo projeto",
+        "target": "CERTI",
+        "field4": "Nenhum tipo de atividade relacionado",
+        "field5": "Atividade do projeto em execução no momento"
+      },
+      "channel": {
+        "project": null,
+        "activityType": "Nenhum",
+        "activity": null,
+        "task": "Nenhum",
+        "projectSource": "TAG",
+        "activitySource": "TAG"
+      },
+      "warnings": [
+        "O projeto não é fixo. Ao usar este item, escolha uma TAG salva; o projeto dessa TAG será usado no apontamento do Channel.",
+        "A atividade não é fixa. Ao usar este item, escolha uma TAG salva; a atividade dessa TAG será usada no apontamento do Channel."
+      ]
+    },
+    {
+      "id": "reunioes-por-area:056:preparacao-de-material-comum-a-area",
+      "sourceLine": 56,
+      "group": "Engenharia de Sistemas",
+      "event": "Preparação de material comum a área",
+      "kind": "AD_HOC",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "13. Formação/Capacitação",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "13. Formação/Capacitação",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:057:atestados-ausencias",
+      "sourceLine": 57,
+      "group": "Engenharia de Sistemas",
+      "event": "Atestados / Ausências",
+      "kind": "SKIP",
+      "durationHint": null,
+      "comment": null,
+      "raw": {
+        "destination": "Não apontar channel",
+        "target": null,
+        "field4": null,
+        "field5": null
+      },
+      "channel": null,
+      "warnings": ["Este evento não deve gerar apontamento no Channel."]
+    },
+    {
+      "id": "reunioes-por-area:063:jogos-da-copa",
+      "sourceLine": 63,
+      "group": "Abonos",
+      "event": "Jogos da Copa",
+      "kind": "AD_HOC",
+      "durationHint": "2h",
+      "comment": "jogos da copa",
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "301 - Outras Atividades",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "301 - Outras Atividades",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    },
+    {
+      "id": "reunioes-por-area:069:banco-de-horas",
+      "sourceLine": 69,
+      "group": "Banco de Horas",
+      "event": "Banco de Horas",
+      "kind": "AD_HOC",
+      "durationHint": "[Considerar o tempo conforme sua ausência]",
+      "comment": null,
+      "raw": {
+        "destination": "Avulso",
+        "target": "CERTI",
+        "field4": "46. Banco de horas",
+        "field5": "Nenhum"
+      },
+      "channel": {
+        "client": "CERTI",
+        "operationNature": "46. Banco de horas",
+        "activityType": "Nenhum"
+      },
+      "warnings": []
+    }
+  ]
+}

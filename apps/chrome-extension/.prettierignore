@@ -1,0 +1,7 @@
+dist
+artifacts
+node_modules
+playwright-report
+test-results
+package-lock.json
+propose.md

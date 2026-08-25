@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Ponto na Certi",
+  "description": "Sincroniza batidas do Ahgora e eventos do Google Calendar com marcações de projetos no Channel.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "alarms",
+    "identity",
+    "offscreen",
+    "scripting",
+    "storage",
+    "sidePanel"
+  ],
+  "optional_permissions": ["notifications"],
+  "optional_host_permissions": [
+    "https://www.ahgora.com.br/*",
+    "https://app.ahgora.com.br/*",
+    "https://channel.certi.org.br/*",
+    "https://calendar.google.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "icons": {
+    "16": "assets/ponto_na_certi_icon_16.png",
+    "32": "assets/ponto_na_certi_icon_32.png",
+    "48": "assets/ponto_na_certi_icon_48.png",
+    "128": "assets/ponto_na_certi_icon_128.png"
+  },
+  "action": {
+    "default_title": "Abrir Ponto na Certi",
+    "default_icon": {
+      "16": "assets/ponto_na_certi_icon_16.png",
+      "32": "assets/ponto_na_certi_icon_32.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/ui/side-panel.html"
+  }
+}

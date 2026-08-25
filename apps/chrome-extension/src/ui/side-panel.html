@@ -1,0 +1,1825 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ponto na Certi</title>
+    <link rel="stylesheet" href="./side-panel.css" />
+  </head>
+  <body>
+    <main class="shell" aria-labelledby="title">
+      <header class="hero">
+        <div class="hero-toolbar">
+          <div class="hero-toolbar-heading">
+            <p class="eyebrow">Transferência assistida</p>
+            <p class="hero-toolbar-caption">Preferências rápidas</p>
+          </div>
+          <div class="hero-actions" aria-label="Preferências rápidas">
+            <div class="toolbar-button-group">
+              <button
+                id="theme-toggle"
+                class="compact-control global-control"
+                type="button"
+                aria-pressed="false"
+                aria-label="Ativar tema escuro"
+              >
+                <span id="theme-icon" class="control-icon" aria-hidden="true">
+                  <svg
+                    class="theme-moon-icon"
+                    viewBox="0 0 24 24"
+                    focusable="false"
+                  >
+                    <path
+                      d="M20.4 15.4A8.5 8.5 0 0 1 8.6 3.6 8.5 8.5 0 1 0 20.4 15.4Z"
+                    />
+                  </svg>
+                  <svg
+                    class="theme-sun-icon"
+                    viewBox="0 0 24 24"
+                    focusable="false"
+                  >
+                    <circle cx="12" cy="12" r="3.5" />
+                    <path
+                      d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"
+                    />
+                  </svg>
+                </span>
+                <span id="theme-label">Escuro</span>
+              </button>
+              <button
+                id="open-help-dialog"
+                class="compact-control global-control"
+                type="button"
+                aria-haspopup="dialog"
+                aria-controls="help-dialog"
+              >
+                <svg
+                  class="control-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path
+                    d="M9.8 9a2.35 2.35 0 1 1 3.35 2.13c-.8.38-1.15.87-1.15 1.62v.25M12 17h.01"
+                  />
+                </svg>
+                <span>Ajuda</span>
+              </button>
+              <button
+                id="open-settings-dialog"
+                class="compact-control global-control"
+                type="button"
+                aria-haspopup="dialog"
+                aria-controls="settings-dialog"
+                aria-label="Abrir configurações"
+              >
+                <svg
+                  class="control-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.55V21h-4v-.09A1.7 1.7 0 0 0 8.96 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1.04H3v-4h.05A1.7 1.7 0 0 0 4.6 8.92a1.7 1.7 0 0 0-.34-1.87L4.2 6.99l2.83-2.83.06.06a1.7 1.7 0 0 0 1.87.34A1.7 1.7 0 0 0 10 3.01V3h4v.01a1.7 1.7 0 0 0 1.04 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.87A1.7 1.7 0 0 0 20.95 9.96H21v4h-.05A1.7 1.7 0 0 0 19.4 15Z"
+                  />
+                </svg>
+                <span>Config.</span>
+              </button>
+            </div>
+            <div class="font-controls" aria-label="Tamanho das letras">
+              <span class="font-control-label" aria-hidden="true">Texto</span>
+              <div class="segmented-control">
+                <button
+                  id="font-decrease"
+                  type="button"
+                  aria-label="Diminuir letras"
+                  title="Diminuir letras"
+                >
+                  <span aria-hidden="true">A−</span>
+                </button>
+                <output
+                  id="font-scale"
+                  aria-live="polite"
+                  aria-label="Tamanho atual das letras"
+                  >130%</output
+                >
+                <button
+                  id="font-increase"
+                  type="button"
+                  aria-label="Aumentar letras"
+                  title="Aumentar letras"
+                >
+                  <span aria-hidden="true">A+</span>
+                </button>
+              </div>
+            </div>
+            <div class="help-monitor-control">
+              <label class="lunch-monitor-toggle">
+                <input
+                  id="punch-alert-enabled"
+                  type="checkbox"
+                  role="switch"
+                  aria-describedby="lunch-monitor-description"
+                />
+                <svg
+                  class="monitor-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+                <span class="monitor-copy">
+                  <strong>Monitorar almoço</strong>
+                  <small id="lunch-monitor-description"
+                    >Desativado · alertas às 12:30, 13:00, 13:30 e 14:00.</small
+                  >
+                </span>
+                <span class="switch-visual" aria-hidden="true">
+                  <span></span>
+                </span>
+              </label>
+              <output
+                id="punch-alert-inline-status"
+                class="lunch-monitor-status"
+                aria-live="polite"
+                hidden
+              ></output>
+            </div>
+          </div>
+        </div>
+        <div class="hero-brand">
+          <button
+            id="open-support-dialog"
+            class="hero-logo-button global-control"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="support-dialog"
+            aria-label="Conheça o projeto e ajude no desenvolvimento"
+          >
+            <img
+              class="hero-logo"
+              src="../../assets/ponto_na_certi_logo.png"
+              alt=""
+              width="104"
+              height="104"
+            />
+          </button>
+          <div class="hero-copy">
+            <h1 id="title">Ponto na Certi</h1>
+            <p>Sincronize ponto, calendário e projetos</p>
+            <small id="extension-version" class="extension-version"
+              >versão</small
+            >
+            <button id="new-operation" type="button">Nova operação</button>
+          </div>
+        </div>
+      </header>
+
+      <dialog
+        id="help-dialog"
+        class="management-dialog info-dialog"
+        aria-labelledby="help-dialog-title"
+        aria-describedby="help-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Ajuda</p>
+            <h2 id="help-dialog-title" tabindex="-1">Como funciona</h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="help-dialog"
+            aria-label="Fechar ajuda"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="help-dialog-description" class="stage-intro">
+            A extensão usa as sessões já autenticadas no Ahgora e no Channel.
+            Ela prepara uma prévia antes de qualquer envio.
+          </p>
+          <ol class="tutorial-steps">
+            <li>
+              <strong>Conecte as abas</strong>
+              <span>Abra e autentique Ahgora, Channel e Google Calendar.</span>
+            </li>
+            <li>
+              <strong>Defina as TAGs</strong>
+              <span>Associe projetos e atividades usados no Channel.</span>
+            </li>
+            <li>
+              <strong>Automatize, se quiser</strong>
+              <span>Crie templates e regras para divisões recorrentes.</span>
+            </li>
+            <li>
+              <strong>Capture e compare</strong>
+              <span>Consulte o espelho e o extrato sem alterar dados.</span>
+            </li>
+            <li>
+              <strong>Revise a prévia</strong>
+              <span>Confira horas, avisos e distribuição por TAG.</span>
+            </li>
+            <li>
+              <strong>Envie ao Channel</strong>
+              <span>Somente os dias selecionados serão enviados.</span>
+            </li>
+          </ol>
+          <section
+            class="contribution-card"
+            aria-labelledby="help-project-title"
+          >
+            <img
+              src="../../assets/development-support.png"
+              alt="Personagem relógio ajudando uma pessoa a desenvolver software"
+              width="768"
+              height="512"
+            />
+            <div>
+              <h3 id="help-project-title">Ajude a melhorar a extensão</h3>
+              <p>
+                O projeto é aberto. Sugestões, relatos e contribuições são
+                bem-vindos.
+              </p>
+              <div class="link-actions">
+                <a
+                  class="button-link primary"
+                  href="https://github.com/lucribas/ponto_na_certi/issues/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Solicitar recurso</a
+                >
+                <a
+                  class="button-link"
+                  href="https://github.com/lucribas/ponto_na_certi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Ver projeto no GitHub</a
+                >
+              </div>
+            </div>
+          </section>
+        </div>
+      </dialog>
+
+      <dialog
+        id="settings-dialog"
+        class="management-dialog info-dialog settings-dialog"
+        aria-labelledby="settings-dialog-title"
+        aria-describedby="settings-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Preferências</p>
+            <h2 id="settings-dialog-title" tabindex="-1">Configurações</h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="settings-dialog"
+            aria-label="Fechar configurações"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="settings-dialog-description" class="stage-intro">
+            Escolha como a extensão deve acessar o Google Calendar.
+          </p>
+          <section
+            class="dialog-section calendar-settings-panel"
+            aria-labelledby="calendar-access-settings-title"
+          >
+            <div>
+              <h3 id="calendar-access-settings-title">
+                Modo de acesso ao Google Calendar
+              </h3>
+              <p id="calendar-access-settings-description" class="hint">
+                O modo selecionado será usado na próxima conexão.
+              </p>
+            </div>
+            <fieldset
+              class="calendar-mode-control settings-calendar-mode-control"
+              aria-describedby="calendar-access-settings-description"
+            >
+              <legend>Escolha o modo de acesso</legend>
+              <div class="calendar-mode-options">
+                <label class="calendar-mode-option">
+                  <input
+                    id="login-calendar-access-tab"
+                    type="radio"
+                    name="calendar-access-mode"
+                    value="tab"
+                    checked
+                  />
+                  <span>
+                    <strong>Google Calendar via aba</strong>
+                    <small>Usa a sessão autenticada aberta no navegador.</small>
+                  </span>
+                </label>
+                <label class="calendar-mode-option">
+                  <input
+                    id="login-calendar-access-oauth"
+                    type="radio"
+                    name="calendar-access-mode"
+                    value="oauth"
+                  />
+                  <span>
+                    <strong>Google Calendar via API</strong>
+                    <small>Usa autorização OAuth somente para leitura.</small>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+            <aside
+              id="calendar-api-access-note"
+              class="calendar-api-access-note"
+              hidden
+            >
+              <strong
+                >Google Calendar API: acesso para usuários de teste</strong
+              >
+              <p>
+                Este modo está disponível somente para usuários de teste
+                cadastrados pelo mantenedor. Solicite a inclusão do seu e-mail
+                para experimentar essa conexão.
+              </p>
+              <a
+                id="request-calendar-api-access"
+                class="button-link primary"
+                href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=lus%40certi.org.br&amp;su=Solicita%C3%A7%C3%A3o%20de%20convite%20para%20acesso%20%C3%A0%20Google%20API%20do%20Ponto%20na%20Certi&amp;body=Ol%C3%A1%2C%20Luciano%21%0A%0AGostaria%20de%20solicitar%20a%20inclus%C3%A3o%20do%20meu%20e-mail%20na%20lista%20de%20usu%C3%A1rios%20de%20teste%20da%20extens%C3%A3o%20Ponto%20na%20Certi%20para%20utilizar%20o%20modo%20Google%20Calendar%20API.%0A%0AObrigado%21"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Abrir solicitação no Gmail</a
+              >
+            </aside>
+          </section>
+        </div>
+        <footer class="dialog-footer">
+          <button
+            class="dialog-close"
+            type="button"
+            data-close-dialog="settings-dialog"
+          >
+            Fechar
+          </button>
+        </footer>
+      </dialog>
+
+      <dialog
+        id="support-dialog"
+        class="management-dialog info-dialog support-dialog"
+        aria-labelledby="support-dialog-title"
+        aria-describedby="support-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Projeto aberto</p>
+            <h2 id="support-dialog-title" tabindex="-1">
+              Ajude no desenvolvimento
+            </h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="support-dialog"
+            aria-label="Fechar convite para contribuir"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <section class="contribution-card contribution-card-featured">
+            <img
+              src="../../assets/development-support.png"
+              alt="Personagem relógio ajudando uma pessoa a desenvolver software"
+              width="768"
+              height="512"
+            />
+            <div>
+              <p id="support-dialog-description">
+                Encontrou algo que pode melhorar? Participe do projeto no
+                GitHub, proponha uma funcionalidade ou contribua com código e
+                documentação.
+              </p>
+              <div class="link-actions">
+                <a
+                  class="button-link primary"
+                  href="https://github.com/lucribas/ponto_na_certi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Quero contribuir</a
+                >
+                <a
+                  class="button-link"
+                  href="https://github.com/lucribas/ponto_na_certi/issues/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Sugerir uma melhoria</a
+                >
+              </div>
+            </div>
+          </section>
+        </div>
+      </dialog>
+
+      <nav class="flow-overview" aria-label="Etapas da operação">
+        <ol>
+          <li id="flow-login">
+            <a
+              href="#login-card"
+              aria-controls="login-card"
+              aria-label="Abrir etapa 1: Conectar"
+              ><span class="flow-step-number">1</span
+              ><span class="flow-step-label">Conectar</span></a
+            >
+          </li>
+          <li id="flow-rules">
+            <a
+              href="#rules-card"
+              aria-controls="rules-card"
+              aria-label="Abrir etapa 2: Regras"
+              ><span class="flow-step-number">2</span
+              ><span class="flow-step-label">Regras</span></a
+            >
+          </li>
+          <li id="flow-capture">
+            <a
+              href="#capture-card"
+              aria-controls="capture-card"
+              aria-label="Abrir etapa 3: Capturar"
+              ><span class="flow-step-number">3</span
+              ><span class="flow-step-label">Capturar</span></a
+            >
+          </li>
+          <li id="flow-review">
+            <a
+              href="#review-card"
+              aria-controls="review-card"
+              aria-label="Abrir etapa 4: Revisar"
+              ><span class="flow-step-number">4</span
+              ><span class="flow-step-label">Revisar</span></a
+            >
+          </li>
+          <li id="flow-send">
+            <a
+              href="#send-card"
+              aria-controls="send-card"
+              aria-label="Abrir etapa 5: Enviar"
+              ><span class="flow-step-number">5</span
+              ><span class="flow-step-label">Enviar</span></a
+            >
+          </li>
+        </ol>
+      </nav>
+
+      <section
+        id="connection-alert"
+        class="connection-alert"
+        role="alert"
+        aria-labelledby="connection-alert-title"
+        hidden
+      >
+        <div class="connection-alert-copy">
+          <span class="connection-alert-icon" aria-hidden="true">!</span>
+          <div>
+            <h2 id="connection-alert-title">Reconexão necessária</h2>
+            <p id="connection-alert-message">
+              Uma aba conectada não está mais disponível.
+            </p>
+          </div>
+        </div>
+        <button id="reconnect-tabs" class="primary" type="button">
+          Reconectar agora
+        </button>
+      </section>
+
+      <details
+        id="login-card"
+        class="card collapsible-card workflow-card"
+        name="workflow-step"
+        open
+      >
+        <summary class="card-summary">
+          <span id="login-title" role="heading" aria-level="2"
+            >1. Abrir, autenticar e conectar</span
+          >
+          <output id="login-summary" class="pill">Pendente</output>
+        </summary>
+        <div class="collapsible-content">
+          <p class="hint">
+            Abre Ahgora, Channel e Google Calendar de uma vez. A extensão não lê
+            nem armazena as senhas.
+          </p>
+          <div class="system-progress" aria-label="Progresso das conexões">
+            <div>
+              <div class="progress-heading">
+                <strong>Ahgora</strong>
+                <output id="login-source-state">Não aberto</output>
+              </div>
+              <progress
+                id="login-source-progress"
+                max="100"
+                value="0"
+              ></progress>
+              <p id="login-source-detail" class="hint">
+                A página do Ahgora ainda não foi aberta.
+              </p>
+            </div>
+            <div>
+              <div class="progress-heading">
+                <strong>Channel</strong>
+                <output id="login-target-state">Não aberto</output>
+              </div>
+              <progress
+                id="login-target-progress"
+                max="100"
+                value="0"
+              ></progress>
+              <p id="login-target-detail" class="hint">
+                A página do Channel ainda não foi aberta.
+              </p>
+            </div>
+            <div
+              id="calendar-integration-card"
+              aria-labelledby="login-calendar-title"
+            >
+              <div class="progress-heading">
+                <strong id="login-calendar-title">Google Calendar</strong>
+                <output id="login-calendar-state">Não conectado</output>
+              </div>
+              <progress
+                id="login-calendar-progress"
+                max="100"
+                value="0"
+              ></progress>
+              <p id="login-calendar-detail" class="hint">
+                A conexão com o Google Calendar ainda não foi iniciada.
+              </p>
+            </div>
+          </div>
+          <button id="stop-login" class="stop-progress" type="button" hidden>
+            Parar login
+          </button>
+          <button id="open-logins" class="primary" type="button">
+            Detectar abas ou abrir logins
+          </button>
+          <p id="login-permission-hint" class="hint"></p>
+        </div>
+      </details>
+
+      <section
+        id="manual-registration"
+        class="card"
+        aria-labelledby="tabs-title"
+        hidden
+      >
+        <h2 id="tabs-title">Acesso manual — somente se necessário</h2>
+        <p id="registration-hint" class="hint">
+          Vá até a aba correta e clique no ícone da extensão. Cada aba exige seu
+          próprio clique.
+        </p>
+        <div class="tab-row">
+          <span>Ahgora</span
+          ><output id="source-state" class="pill">Não registrado</output
+          ><button id="register-source" type="button">Registrar</button>
+        </div>
+        <div class="tab-row">
+          <span>Channel</span
+          ><output id="target-state" class="pill">Não registrado</output
+          ><button id="register-target" type="button">Registrar</button>
+        </div>
+      </section>
+
+      <details
+        id="rules-card"
+        class="card collapsible-card workflow-card workflow-launcher"
+        name="workflow-step"
+      >
+        <summary class="card-summary">
+          <span id="rules-card-title" role="heading" aria-level="2"
+            >2. Regras</span
+          >
+          <div class="workflow-launcher-summaries">
+            <output id="config-summary" class="pill">0 TAGs</output>
+            <output id="template-manager-summary" class="pill"
+              >0 templates</output
+            >
+          </div>
+        </summary>
+        <div class="collapsible-content">
+          <p class="hint">
+            Gerencie TAGs, templates e regras automáticas de apontamento.
+          </p>
+          <div class="workflow-launcher-actions">
+            <button
+              id="open-config-dialog"
+              class="manage-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="config-dialog"
+            >
+              Gerenciar TAGs
+            </button>
+            <button
+              id="open-template-manager-dialog"
+              class="manage-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="template-manager-dialog"
+            >
+              Gerenciar templates e regras
+            </button>
+            <button
+              id="open-calendar-manager-dialog"
+              class="manage-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="calendar-manager-dialog"
+            >
+              Gerenciar regras automáticas do Google Calendar
+            </button>
+            <button
+              id="open-rag-catalog-manager-dialog"
+              class="manage-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="rag-catalog-manager-dialog"
+            >
+              Gerenciar catálogos de apontamentos RAG
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <dialog
+        id="config-dialog"
+        class="management-dialog"
+        aria-labelledby="config-dialog-title"
+        aria-describedby="config-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Regras</p>
+            <h2 id="config-dialog-title" tabindex="-1">
+              Definição de marcações de ponto no Channel
+            </h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="config-dialog"
+            aria-label="Fechar definição de marcações"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="config-dialog-description" class="stage-intro">
+            Salve combinações de projeto + atividade. O nome da TAG é criado
+            automaticamente e poderá ser escolhido em cada dia novo.
+          </p>
+          <section
+            class="dialog-section"
+            aria-labelledby="catalog-section-title"
+          >
+            <div class="catalog-heading">
+              <div>
+                <h3 id="catalog-section-title">
+                  Projetos e atividades disponíveis
+                </h3>
+                <p id="catalog-status" class="hint">
+                  Cache ainda não consultado.
+                </p>
+              </div>
+              <button id="fetch-catalog" type="button">
+                Atualizar do Channel
+              </button>
+            </div>
+          </section>
+          <section
+            class="dialog-section tag-editor"
+            aria-labelledby="tag-editor-title"
+          >
+            <div class="section-heading">
+              <div>
+                <h3 id="tag-editor-title">Criar nova TAG</h3>
+                <p class="hint">
+                  Escolha o destino no Channel e defina se ele será o padrão.
+                </p>
+              </div>
+              <button
+                id="toggle-tag-rag-copy"
+                type="button"
+                aria-expanded="false"
+                aria-controls="tag-rag-copy-panel"
+              >
+                Copiar de item RAG…
+              </button>
+            </div>
+            <section
+              id="tag-rag-copy-panel"
+              class="tag-rag-copy-panel"
+              aria-labelledby="tag-rag-copy-title"
+              hidden
+            >
+              <div>
+                <strong id="tag-rag-copy-title"
+                  >Preencher a partir do RAG</strong
+                >
+                <p class="hint">
+                  A cópia apenas preenche o formulário. Revise os campos antes
+                  de salvar a TAG.
+                </p>
+              </div>
+              <div class="field-grid">
+                <label
+                  >Fonte RAG
+                  <select id="tag-rag-copy-source"></select>
+                </label>
+                <label
+                  >Filtrar opções
+                  <input
+                    id="tag-rag-copy-filter"
+                    type="search"
+                    placeholder="Nome, grupo ou destino"
+                  />
+                </label>
+                <label
+                  >Marcação
+                  <select id="tag-rag-copy-item"></select>
+                </label>
+              </div>
+              <div
+                id="tag-rag-copy-preview"
+                class="tag-rag-copy-preview"
+                aria-live="polite"
+              ></div>
+              <button id="apply-tag-rag-copy" type="button" disabled>
+                Copiar campos para a TAG
+              </button>
+            </section>
+            <div class="field-grid">
+              <label
+                >Nome da TAG (automático)
+                <input
+                  id="tag-name"
+                  readonly
+                  placeholder="Escolha projeto e atividade"
+                />
+              </label>
+              <label
+                >Projeto
+                <select id="tag-project" disabled>
+                  <option value="">Obtenha o espelho do Channel</option>
+                </select>
+              </label>
+              <label
+                >Atividade
+                <select id="tag-activity" disabled>
+                  <option value="">Escolha primeiro um projeto</option>
+                </select>
+              </label>
+              <label class="default-choice">
+                <input id="tag-default" type="checkbox" />
+                Usar esta TAG por padrão
+              </label>
+            </div>
+            <details id="tag-advanced-options">
+              <summary>Opções avançadas desta TAG</summary>
+              <div class="field-grid details-content">
+                <label
+                  >Tipo de atividade
+                  <input id="activity-type" value="Nenhum" autocomplete="off" />
+                </label>
+                <label
+                  >Tarefa
+                  <input id="task" value="Nenhum" autocomplete="off" />
+                </label>
+                <label
+                  >Observações
+                  <textarea
+                    id="tag-comments"
+                    rows="3"
+                    autocomplete="off"
+                    placeholder="Texto enviado ao campo Observações do Channel"
+                  ></textarea>
+                </label>
+              </div>
+            </details>
+            <div class="tag-editor-actions">
+              <button id="save-tag" class="primary" type="button">
+                Salvar TAG
+              </button>
+              <button id="cancel-tag-edit" type="button" hidden>
+                Cancelar edição
+              </button>
+            </div>
+            <output
+              id="tag-editor-status"
+              class="hint"
+              aria-live="polite"
+            ></output>
+          </section>
+          <section class="dialog-section" aria-labelledby="saved-tags-title">
+            <h3 id="saved-tags-title">TAGs salvas</h3>
+            <p class="hint">
+              Defina o destino padrão, edite ou exclua combinações que não usa
+              mais.
+            </p>
+            <div id="tag-list" class="tag-list" role="list"></div>
+          </section>
+        </div>
+        <footer class="dialog-footer">
+          <button
+            class="dialog-close"
+            type="button"
+            data-close-dialog="config-dialog"
+          >
+            Fechar
+          </button>
+        </footer>
+      </dialog>
+
+      <dialog
+        id="rag-catalog-manager-dialog"
+        class="management-dialog"
+        aria-labelledby="rag-catalog-manager-dialog-title"
+        aria-describedby="rag-catalog-manager-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Regras</p>
+            <h2 id="rag-catalog-manager-dialog-title" tabindex="-1">
+              Catálogos de apontamentos RAG
+            </h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="rag-catalog-manager-dialog"
+            aria-label="Fechar catálogos de apontamentos RAG"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="rag-catalog-manager-dialog-description" class="stage-intro">
+            Pesquise, ajuste e transfira os apontamentos de cada fonte RAG.
+          </p>
+          <section class="dialog-section" aria-labelledby="rag-update-title">
+            <div class="catalog-heading">
+              <div>
+                <h3 id="rag-update-title">Fontes RAG</h3>
+                <p id="rag-catalog-status" class="hint"></p>
+              </div>
+              <button id="restore-rag-catalogs" class="secondary" type="button">
+                Restaurar todas
+              </button>
+            </div>
+            <div class="rag-source-controls">
+              <label
+                >Fonte
+                <select id="rag-update-source"></select>
+              </label>
+              <div class="rag-source-actions">
+                <button id="create-rag-item" class="primary" type="button">
+                  Criar item
+                </button>
+                <button id="export-rag-catalog" type="button">
+                  Exportar CSV
+                </button>
+                <button id="restore-rag-catalog" type="button">
+                  Restaurar fonte
+                </button>
+              </div>
+            </div>
+
+            <div id="rag-browser" class="rag-browser">
+              <div class="rag-browser-filters">
+                <label
+                  >Pesquisar
+                  <input
+                    id="rag-item-search"
+                    type="search"
+                    placeholder="Grupo, evento ou destino"
+                    aria-controls="rag-item-list"
+                  />
+                </label>
+                <label
+                  >Tipo
+                  <select
+                    id="rag-item-kind-filter"
+                    aria-controls="rag-item-list"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="PROJECT">Projeto</option>
+                    <option value="AD_HOC">Avulso</option>
+                    <option value="SKIP">Não apontar</option>
+                  </select>
+                </label>
+                <label
+                  >Estado
+                  <select
+                    id="rag-item-state-filter"
+                    aria-controls="rag-item-list"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="original">Original</option>
+                    <option value="modified">Alterado</option>
+                    <option value="created">Criado</option>
+                  </select>
+                </label>
+              </div>
+              <p
+                id="rag-item-count"
+                class="hint"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              ></p>
+              <div id="rag-item-list" class="rag-item-list" role="list"></div>
+            </div>
+
+            <section
+              id="rag-item-editor"
+              class="rag-item-editor"
+              aria-labelledby="rag-item-editor-title"
+              hidden
+            >
+              <div class="section-heading">
+                <div>
+                  <h4 id="rag-item-editor-title">Criar item</h4>
+                  <p class="hint">O ID é administrado pela extensão.</p>
+                </div>
+              </div>
+              <div class="field-grid">
+                <label
+                  >Grupo
+                  <input id="rag-item-group" required />
+                </label>
+                <label
+                  >Evento
+                  <input id="rag-item-event" required />
+                </label>
+                <label
+                  >Tipo
+                  <select
+                    id="rag-item-kind"
+                    aria-controls="rag-project-fields rag-ad-hoc-fields"
+                    aria-describedby="rag-item-destination-preview"
+                  >
+                    <option value="PROJECT">Projeto</option>
+                    <option value="AD_HOC">Avulso</option>
+                    <option value="SKIP">Não apontar</option>
+                  </select>
+                </label>
+                <label
+                  >Duração sugerida
+                  <input id="rag-item-duration" placeholder="Ex.: 01:00" />
+                </label>
+              </div>
+              <label
+                >Comentário
+                <textarea id="rag-item-comment" rows="2"></textarea>
+              </label>
+
+              <fieldset id="rag-project-fields" class="rag-kind-fields">
+                <legend>Destino de projeto</legend>
+                <div class="field-grid">
+                  <label
+                    >Origem do projeto
+                    <select id="rag-project-source">
+                      <option value="FIXED">Projeto fixo</option>
+                      <option value="TAG">Escolher pela TAG ao apontar</option>
+                    </select>
+                  </label>
+                  <label id="rag-project-value-field"
+                    >Projeto
+                    <input id="rag-project" />
+                  </label>
+                  <label
+                    >Origem da atividade
+                    <select id="rag-activity-source">
+                      <option value="FIXED">Atividade fixa</option>
+                      <option value="TAG">Escolher pela TAG ao apontar</option>
+                    </select>
+                  </label>
+                  <label id="rag-activity-value-field"
+                    >Atividade
+                    <input id="rag-activity" />
+                  </label>
+                  <label
+                    >Tipo de atividade
+                    <input id="rag-project-activity-type" />
+                  </label>
+                  <label
+                    >Tarefa
+                    <input id="rag-task" />
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset id="rag-ad-hoc-fields" class="rag-kind-fields" hidden>
+                <legend>Destino avulso</legend>
+                <div class="field-grid">
+                  <label
+                    >Cliente
+                    <input id="rag-client" />
+                  </label>
+                  <label
+                    >Natureza da operação
+                    <input id="rag-operation-nature" />
+                  </label>
+                  <label
+                    >Tipo de atividade
+                    <input id="rag-ad-hoc-activity-type" />
+                  </label>
+                </div>
+              </fieldset>
+              <p
+                id="rag-item-destination-preview"
+                class="rag-destination-preview"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              ></p>
+              <label id="rag-create-calendar-rule-field" hidden>
+                <span>
+                  <input id="rag-create-calendar-rule" type="checkbox" />
+                  Criar regra padrão do Google Calendar
+                </span>
+                <small class="hint"
+                  >Procura o evento no título e na descrição. Desmarcado por
+                  padrão.</small
+                >
+              </label>
+              <output
+                id="rag-item-editor-status"
+                class="hint"
+                aria-live="polite"
+              ></output>
+              <div class="rag-editor-actions">
+                <button id="save-rag-item" class="primary" type="button">
+                  Salvar
+                </button>
+                <button id="cancel-rag-item-edit" type="button">
+                  Cancelar
+                </button>
+              </div>
+            </section>
+
+            <section
+              id="rag-delete-panel"
+              class="rag-delete-panel"
+              aria-labelledby="rag-delete-title"
+              hidden
+            >
+              <h4 id="rag-delete-title">Item usado por regras ou templates</h4>
+              <p id="rag-delete-summary"></p>
+              <label
+                >Reatribuir referências para
+                <select id="rag-delete-replacement"></select>
+              </label>
+              <div class="rag-editor-actions">
+                <button
+                  id="reassign-delete-rag-item"
+                  class="danger"
+                  type="button"
+                >
+                  Reatribuir e excluir
+                </button>
+                <button id="cancel-delete-rag-item" type="button">
+                  Cancelar
+                </button>
+              </div>
+            </section>
+
+            <details id="rag-import-panel" class="rag-import-panel">
+              <summary>Importar CSV</summary>
+              <div class="rag-update-controls">
+                <label
+                  >Arquivo CSV
+                  <input
+                    id="rag-update-file"
+                    type="file"
+                    accept=".csv,text/csv"
+                  />
+                </label>
+                <label
+                  >Modo
+                  <select
+                    id="rag-import-mode"
+                    aria-controls="rag-import-preview"
+                  >
+                    <option value="merge">Mesclar com a fonte</option>
+                    <option value="replace">Substituir a fonte</option>
+                  </select>
+                </label>
+                <button id="update-rag-catalog" type="button">
+                  Gerar prévia
+                </button>
+              </div>
+              <section
+                id="rag-import-preview"
+                class="rag-import-preview"
+                aria-labelledby="rag-import-preview-title"
+                hidden
+              >
+                <h4 id="rag-import-preview-title">Prévia da importação</h4>
+                <p id="rag-import-counts"></p>
+                <p id="rag-import-result" class="hint"></p>
+                <ul id="rag-import-issues"></ul>
+                <button id="apply-rag-import" class="primary" type="button">
+                  Aplicar importação
+                </button>
+              </section>
+            </details>
+            <output
+              id="rag-update-status"
+              class="hint"
+              aria-live="polite"
+            ></output>
+          </section>
+        </div>
+        <footer class="dialog-footer">
+          <button
+            class="dialog-close"
+            type="button"
+            data-close-dialog="rag-catalog-manager-dialog"
+          >
+            Fechar
+          </button>
+        </footer>
+      </dialog>
+
+      <dialog
+        id="template-manager-dialog"
+        class="management-dialog"
+        aria-labelledby="template-manager-dialog-title"
+        aria-describedby="template-manager-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Regras</p>
+            <h2 id="template-manager-dialog-title" tabindex="-1">
+              Templates e regras automáticas
+            </h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="template-manager-dialog"
+            aria-label="Fechar templates e regras automáticas"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="template-manager-dialog-description" class="stage-intro">
+            Salve a distribuição de um dia como template. Depois, reutilize-a
+            manualmente ou crie regras semanais.
+          </p>
+
+          <section class="dialog-section" aria-labelledby="templates-title">
+            <div class="section-heading">
+              <div>
+                <h3 id="templates-title">Templates de marcações</h3>
+                <p class="hint">
+                  Cada template preserva os percentuais e as horas originais.
+                  Crie aqui ou use “Salvar como template” em um dia da revisão.
+                </p>
+              </div>
+              <button id="create-template" type="button">Criar template</button>
+            </div>
+            <div id="template-editor" class="rule-editor" hidden>
+              <h4 id="template-editor-title">Criar template</h4>
+              <div class="field-grid">
+                <label
+                  >Nome do template
+                  <input
+                    id="template-name"
+                    maxlength="80"
+                    placeholder="Ex.: Distribuição padrão"
+                  />
+                </label>
+                <label
+                  >Duração original do dia (HH:MM)
+                  <input
+                    id="template-source-duration"
+                    inputmode="numeric"
+                    placeholder="08:00"
+                  />
+                </label>
+              </div>
+              <div class="section-heading">
+                <div>
+                  <strong>Marcações do template</strong>
+                  <p class="hint">
+                    Informe o destino e a duração de cada marcação.
+                  </p>
+                </div>
+                <button id="add-template-entry" type="button">
+                  Adicionar marcação
+                </button>
+              </div>
+              <div id="template-entry-list" class="template-entry-list"></div>
+              <output id="template-entry-total" class="rule-share-total"
+                >Total: 00:00</output
+              >
+              <div class="tag-editor-actions">
+                <button id="save-template" class="primary" type="button">
+                  Salvar template
+                </button>
+                <button id="cancel-template-edit" type="button">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+            <div id="template-list" class="manager-list" role="list"></div>
+          </section>
+
+          <section class="dialog-section" aria-labelledby="rules-title">
+            <div>
+              <h3 id="rules-title">Regras de aplicação</h3>
+              <p class="hint">
+                Interface semanal no padrão do Google Calendar. A primeira regra
+                ativa compatível com o dia será aplicada.
+              </p>
+            </div>
+            <div class="rule-editor">
+              <label
+                >Nome da regra
+                <input
+                  id="rule-name"
+                  maxlength="80"
+                  placeholder="Ex.: Distribuição das sextas"
+                />
+              </label>
+              <div class="recurrence-frequency">
+                <span>Repetir a cada</span>
+                <input
+                  id="rule-every"
+                  type="number"
+                  min="1"
+                  max="52"
+                  value="1"
+                  aria-label="Intervalo de repetição em semanas"
+                />
+                <span>semana(s)</span>
+              </div>
+              <fieldset class="weekday-picker">
+                <legend>Repetir em</legend>
+                <label
+                  ><input
+                    type="checkbox"
+                    value="1"
+                    aria-label="Segunda-feira"
+                  />Segunda</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    value="2"
+                    aria-label="Terça-feira"
+                  />Terça</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    value="3"
+                    aria-label="Quarta-feira"
+                  />Quarta</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    value="4"
+                    aria-label="Quinta-feira"
+                  />Quinta</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    value="5"
+                    aria-label="Sexta-feira"
+                  />Sexta</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    value="6"
+                    aria-label="Sábado"
+                  />Sábado</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    value="0"
+                    aria-label="Domingo"
+                  />Domingo</label
+                >
+              </fieldset>
+              <label
+                >Inicia em
+                <input id="rule-start" type="date" />
+              </label>
+              <fieldset class="recurrence-end">
+                <legend>Termina</legend>
+                <label>
+                  <input type="radio" name="rule-end" value="never" checked />
+                  Nunca
+                </label>
+                <label>
+                  <input type="radio" name="rule-end" value="on" />
+                  Em
+                  <input
+                    id="rule-end-date"
+                    type="date"
+                    aria-label="Data final da recorrência"
+                    disabled
+                  />
+                </label>
+                <label>
+                  <input type="radio" name="rule-end" value="after" />
+                  Após
+                  <input
+                    id="rule-end-count"
+                    type="number"
+                    min="1"
+                    max="730"
+                    value="10"
+                    aria-label="Quantidade de ocorrências"
+                    disabled
+                  />
+                  ocorrência(s)
+                </label>
+              </fieldset>
+              <div class="rule-composition">
+                <div class="section-heading">
+                  <div>
+                    <strong>Composição da regra</strong>
+                    <p class="hint">
+                      Misture templates e defina a participação de cada um. O
+                      total precisa ser 100%.
+                    </p>
+                  </div>
+                  <button id="add-rule-template" type="button">
+                    Adicionar template
+                  </button>
+                </div>
+                <div
+                  id="rule-template-shares"
+                  class="rule-template-shares"
+                ></div>
+                <output id="rule-share-total" class="rule-share-total"
+                  >Total: 0%</output
+                >
+              </div>
+              <label class="default-choice">
+                <input id="rule-enabled" type="checkbox" checked />
+                Ativar esta regra ao salvar
+              </label>
+              <button id="save-rule" class="primary" type="button">
+                Salvar regra
+              </button>
+            </div>
+            <output
+              id="template-manager-status"
+              class="hint"
+              aria-live="polite"
+            ></output>
+            <div id="rule-list" class="manager-list" role="list"></div>
+          </section>
+        </div>
+        <footer class="dialog-footer">
+          <button
+            class="dialog-close"
+            type="button"
+            data-close-dialog="template-manager-dialog"
+          >
+            Fechar
+          </button>
+        </footer>
+      </dialog>
+
+      <dialog
+        id="calendar-manager-dialog"
+        class="management-dialog"
+        aria-labelledby="calendar-manager-dialog-title"
+        aria-describedby="calendar-manager-dialog-description"
+      >
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Regras</p>
+            <h2 id="calendar-manager-dialog-title" tabindex="-1">
+              Regras automáticas do Google Calendar
+            </h2>
+          </div>
+          <button
+            class="dialog-close dialog-close-icon"
+            type="button"
+            data-close-dialog="calendar-manager-dialog"
+            aria-label="Fechar regras automáticas do Google Calendar"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="calendar-manager-dialog-description" class="stage-intro">
+            Conecte uma conta, escolha os calendários consultados e associe
+            eventos às origens usadas nas marcações do Channel.
+          </p>
+          <section class="dialog-section" aria-labelledby="calendar-title">
+            <div class="section-heading">
+              <div>
+                <h3 id="calendar-title">Google Calendar</h3>
+                <p id="calendar-connection-status" class="hint">
+                  Conta não conectada.
+                </p>
+                <p class="hint">
+                  Ao conectar, você poderá autorizar acesso somente leitura e
+                  escolher quais calendários serão usados.
+                </p>
+              </div>
+              <button id="calendar-connect" type="button">
+                Conectar Google Calendar
+              </button>
+            </div>
+            <fieldset class="calendar-selector">
+              <legend>Calendários usados nas capturas</legend>
+              <ul
+                id="calendar-list"
+                class="calendar-list"
+                aria-label="Calendários usados nas capturas"
+              ></ul>
+            </fieldset>
+            <div class="rule-editor calendar-rule-editor">
+              <label
+                >Nome da regra
+                <input
+                  id="calendar-rule-name"
+                  maxlength="80"
+                  placeholder="Ex.: Daily do Cliente Alfa"
+                />
+              </label>
+              <label
+                >Quando encontrar
+                <textarea
+                  id="calendar-rule-phrases"
+                  rows="3"
+                  placeholder="Uma frase por linha"
+                ></textarea>
+              </label>
+              <label
+                >Correspondência
+                <select id="calendar-rule-mode">
+                  <option value="all">Todas as frases (E)</option>
+                  <option value="any">Qualquer frase (OU)</option>
+                </select>
+              </label>
+              <fieldset class="calendar-selector">
+                <legend>Procurar em</legend>
+                <ul
+                  class="calendar-list calendar-fields"
+                  aria-label="Campos do evento pesquisados"
+                >
+                  <li class="calendar-choice-item">
+                    <label class="calendar-choice"
+                      ><input
+                        type="checkbox"
+                        value="title"
+                        checked
+                      />Título</label
+                    >
+                  </li>
+                  <li class="calendar-choice-item">
+                    <label class="calendar-choice"
+                      ><input
+                        type="checkbox"
+                        value="description"
+                        checked
+                      />Descrição</label
+                    >
+                  </li>
+                  <li class="calendar-choice-item">
+                    <label class="calendar-choice"
+                      ><input type="checkbox" value="location" />Local</label
+                    >
+                  </li>
+                </ul>
+              </fieldset>
+              <label
+                >Origem da marcação
+                <select id="calendar-rule-source">
+                  <option value="tags">Minhas TAGs</option>
+                </select>
+              </label>
+              <div id="calendar-rule-destination" class="rag-picker"></div>
+              <fieldset>
+                <legend>Aplicar nos calendários</legend>
+                <ul
+                  id="calendar-rule-calendars"
+                  class="calendar-list"
+                  aria-label="Calendários desta regra"
+                ></ul>
+              </fieldset>
+              <details>
+                <summary>Opções avançadas</summary>
+                <div class="details-content">
+                  <label
+                    >Não pode conter
+                    <textarea
+                      id="calendar-rule-excluded"
+                      rows="2"
+                      placeholder="Uma frase por linha"
+                    ></textarea>
+                  </label>
+                  <label class="default-choice"
+                    ><input
+                      id="calendar-ignore-cancelled"
+                      type="checkbox"
+                      checked
+                    />Ignorar cancelados</label
+                  >
+                  <label class="default-choice"
+                    ><input
+                      id="calendar-ignore-declined"
+                      type="checkbox"
+                      checked
+                    />Ignorar convites recusados</label
+                  >
+                  <label class="default-choice"
+                    ><input
+                      id="calendar-ignore-all-day"
+                      type="checkbox"
+                      checked
+                    />Ignorar eventos de dia inteiro</label
+                  >
+                  <label class="default-choice"
+                    ><input
+                      id="calendar-busy-only"
+                      type="checkbox"
+                      checked
+                    />Somente eventos marcados como ocupado</label
+                  >
+                </div>
+              </details>
+              <label class="default-choice"
+                ><input
+                  id="calendar-rule-enabled"
+                  type="checkbox"
+                  checked
+                />Ativar esta regra ao salvar</label
+              >
+              <div class="tag-editor-actions">
+                <button id="save-calendar-rule" class="primary" type="button">
+                  Salvar regra do Calendar
+                </button>
+                <button id="cancel-calendar-rule-edit" type="button" hidden>
+                  Cancelar edição
+                </button>
+              </div>
+            </div>
+            <output
+              id="calendar-manager-status"
+              class="hint"
+              aria-live="polite"
+            ></output>
+            <div id="calendar-rule-list" class="manager-list" role="list"></div>
+          </section>
+        </div>
+        <footer class="dialog-footer">
+          <button
+            class="dialog-close"
+            type="button"
+            data-close-dialog="calendar-manager-dialog"
+          >
+            Fechar
+          </button>
+        </footer>
+      </dialog>
+
+      <details
+        id="capture-card"
+        class="card collapsible-card workflow-card"
+        name="workflow-step"
+      >
+        <summary class="card-summary">
+          <span id="capture-title" role="heading" aria-level="2"
+            >3. Capturar e comparar</span
+          >
+        </summary>
+        <div class="collapsible-content">
+          <div class="field-grid">
+            <label
+              >Período
+              <select id="period-kind">
+                <option value="month" selected>Mês atual</option>
+                <option value="default">Mês anterior</option>
+                <option value="range">Intervalo inclusivo</option>
+              </select>
+            </label>
+            <label id="month-field"
+              >Mês de fechamento <input id="month" type="month"
+            /></label>
+            <label id="start-field" hidden
+              >Data inicial <input id="start" type="date"
+            /></label>
+            <label id="end-field" hidden
+              >Data final <input id="end" type="date"
+            /></label>
+          </div>
+          <details class="operation-overrides">
+            <summary>Overrides desta operação</summary>
+            <div class="details-content">
+              <label
+                >Batidas substitutas
+                <textarea
+                  id="overrides"
+                  rows="3"
+                  placeholder="2026-08-03=08:00,12:00,13:00,17:00"
+                ></textarea>
+              </label>
+              <p class="hint">
+                Você pode adicionar batidas substitutas, no formato
+                AAAA-MM-DD=HH:MM,HH:MM. Ficam somente na sessão do navegador.
+              </p>
+            </div>
+          </details>
+          <button id="capture" class="primary" type="button">
+            Capturar e comparar
+          </button>
+          <div class="stage-feedback" aria-labelledby="capture-progress-title">
+            <h3 id="capture-progress-title">Progresso</h3>
+            <div class="system-progress" aria-label="Progresso">
+              <div>
+                <div class="progress-heading">
+                  <strong>Ahgora</strong>
+                  <output id="ahgora-progress-state">Aguardando</output>
+                </div>
+                <progress id="ahgora-progress" max="100" value="0"></progress>
+                <p id="ahgora-progress-detail" class="hint">
+                  A captura ainda não começou.
+                </p>
+              </div>
+              <div>
+                <div class="progress-heading">
+                  <strong>Channel</strong>
+                  <output id="channel-progress-state">Aguardando</output>
+                </div>
+                <progress id="channel-progress" max="100" value="0"></progress>
+                <p id="channel-progress-detail" class="hint">
+                  A consulta ainda não começou.
+                </p>
+              </div>
+              <div id="calendar-progress-card">
+                <div class="progress-heading">
+                  <strong>Google Calendar</strong>
+                  <output id="calendar-progress-state">Desabilitado</output>
+                </div>
+                <progress
+                  id="calendar-progress"
+                  max="100"
+                  value="100"
+                ></progress>
+                <p id="calendar-progress-detail" class="hint">
+                  Conexão Google Calendar desabilitada.
+                </p>
+              </div>
+              <div id="comparison-progress-card">
+                <div class="progress-heading">
+                  <strong>Comparação</strong>
+                  <output id="comparison-progress-state">Aguardando</output>
+                </div>
+                <progress
+                  id="comparison-progress"
+                  max="100"
+                  value="0"
+                ></progress>
+                <p id="comparison-progress-detail" class="hint">
+                  Aguardando a conclusão das capturas.
+                </p>
+              </div>
+            </div>
+            <button
+              id="stop-capture"
+              class="stop-progress"
+              type="button"
+              hidden
+            >
+              Parar captura
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details
+        id="review-card"
+        class="card collapsible-card workflow-card"
+        name="workflow-step"
+      >
+        <summary class="card-summary">
+          <span id="review-title" role="heading" aria-level="2"
+            >4. Revisar apontamentos</span
+          >
+          <span id="totals" class="pill">0 itens</span>
+        </summary>
+        <div class="collapsible-content">
+          <p class="stage-intro">
+            Confira as diferenças e distribua cada dia novo entre uma ou mais
+            marcações. O total do dia é sempre preservado.
+          </p>
+          <output id="operation-status" class="notice" aria-live="polite"
+            >Pronto para configurar.</output
+          >
+          <p id="effective-period" class="hint"></p>
+          <dl class="hour-totals" aria-label="Totais da comparação">
+            <div>
+              <dt>Capturado</dt>
+              <dd><output id="total-captured">00:00 · 0 registros</output></dd>
+            </div>
+            <div>
+              <dt>Novos para revisar</dt>
+              <dd><output id="total-review">00:00 · 0 itens</output></dd>
+            </div>
+            <div>
+              <dt>Selecionados para enviar</dt>
+              <dd><output id="total-selected">00:00 · 0 itens</output></dd>
+            </div>
+          </dl>
+          <p class="hint">
+            Dias novos sem avisos são selecionados automaticamente. Dias iguais,
+            divergentes ou com aviso não são enviados sem revisão. Reduzir uma
+            marcação cria outra com o saldo restante.
+          </p>
+          <div id="preview" class="preview" role="list"></div>
+          <div id="review-actions" class="actions" hidden>
+            <button id="select-remaining" type="button">
+              Selecionar restantes
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details
+        id="send-card"
+        class="card collapsible-card workflow-card"
+        name="workflow-step"
+      >
+        <summary class="card-summary">
+          <span id="send-title" role="heading" aria-level="2"
+            >5. Enviar ao Channel</span
+          >
+        </summary>
+        <div class="collapsible-content">
+          <p class="stage-intro">
+            Esta etapa só é liberada quando houver dias selecionados na revisão.
+            Um único clique inicia o envio de toda a seleção.
+          </p>
+          <div class="stage-feedback" aria-labelledby="send-progress-title">
+            <div class="progress-heading">
+              <h3 id="send-progress-title">Progresso do envio</h3>
+              <output id="write-progress-state">Aguardando</output>
+            </div>
+            <progress id="write-progress" max="100" value="0"></progress>
+            <p id="write-progress-detail" class="hint">
+              Selecione os dias que deseja enviar na etapa 4.
+            </p>
+            <button id="stop-write" class="stop-progress" type="button" hidden>
+              Parar envio
+            </button>
+          </div>
+          <output
+            id="preview-status"
+            class="notice preview-status"
+            aria-live="polite"
+            hidden
+          ></output>
+          <div id="send-actions" class="actions" hidden>
+            <button id="apply" class="primary" type="button" disabled>
+              Enviar selecionados
+            </button>
+            <button id="advance" class="primary" type="button" hidden>
+              Continuar após falha
+            </button>
+            <button id="cancel" class="danger" type="button">
+              Cancelar operação
+            </button>
+          </div>
+          <p id="send-warning" class="warning" hidden>
+            Um clique envia todos os itens selecionados diretamente ao Channel.
+            Em caso de resposta ambígua, a fila é interrompida para evitar
+            duplicidade.
+          </p>
+        </div>
+      </details>
+    </main>
+    <script type="module" src="./side-panel.ts"></script>
+  </body>
+</html>

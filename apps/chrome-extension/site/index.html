@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Download e tutorial de instalação da extensão Ponto na Certi."
+    />
+    <title>Ponto na Certi · Instalação</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav aria-label="Links do projeto">
+        <a href="{{REPOSITORY_URL}}">Código-fonte</a>
+        <a href="{{RELEASE_URL}}">Release {{TAG}}</a>
+      </nav>
+      <div class="hero-content">
+        <p class="eyebrow">Extensão Chrome Manifest V3</p>
+        <h1>Ponto na Certi</h1>
+        <p class="lead">
+          Consulte as batidas do Ahgora e os eventos do Google Calendar, compare
+          com o Channel e envie apenas os dias selecionados.
+        </p>
+        <div class="actions">
+          <a
+            class="button primary"
+            href="download/{{LATEST_ZIP_FILE}}"
+            download="{{ZIP_FILE}}"
+            >Baixar versão {{VERSION}}</a
+          >
+          <a class="button secondary" href="{{RELEASE_URL}}"
+            >Ver notas da versão</a
+          >
+        </div>
+        <p class="release-meta">
+          Versão {{VERSION}} · pacote verificado pelos testes automatizados
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <section aria-labelledby="install-title">
+        <p class="section-number">Tutorial</p>
+        <h2 id="install-title">Como instalar no Google Chrome</h2>
+        <ol class="steps">
+          <li>
+            <strong>Baixe o ZIP</strong>
+            <p>
+              Use o botão acima e salve o arquivo
+              <code>{{ZIP_FILE}}</code>.
+            </p>
+          </li>
+          <li>
+            <strong>Extraia em uma pasta permanente</strong>
+            <p>
+              Crie uma pasta como <code>Documentos/PontoNaCerti</code> e extraia
+              o conteúdo diretamente nela. A pasta escolhida deve conter o
+              arquivo <code>manifest.json</code> e não deve ser movida ou
+              apagada após a instalação.
+            </p>
+          </li>
+          <li>
+            <strong>Abra o gerenciador de extensões</strong>
+            <p>
+              Digite <code>chrome://extensions</code> na barra de endereços e
+              ative o <strong>Modo do desenvolvedor</strong> no canto superior.
+            </p>
+          </li>
+          <li>
+            <strong>Carregue a pasta extraída</strong>
+            <p>
+              Clique em <strong>Carregar sem compactação</strong> e selecione a
+              pasta que contém o <code>manifest.json</code>.
+            </p>
+          </li>
+          <li>
+            <strong>Fixe e abra a extensão</strong>
+            <p>
+              No menu de extensões do Chrome, fixe
+              <strong>Ponto na Certi</strong>. Clique no ícone para abrir o
+              painel lateral e siga as etapas de conexão exibidas nele.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="update" aria-labelledby="update-title">
+        <div>
+          <p class="section-number">Atualização manual</p>
+          <h2 id="update-title">Como instalar uma versão nova</h2>
+        </div>
+        <p>
+          Baixe a release mais recente, feche o Chrome e substitua os arquivos
+          dentro da mesma pasta usada na instalação. Depois abra
+          <code>chrome://extensions</code> e clique em
+          <strong>Recarregar</strong> no cartão da extensão. Manter a mesma
+          pasta evita criar outra instalação separada.
+        </p>
+      </section>
+
+      <section aria-labelledby="security-title">
+        <p class="section-number">Integridade</p>
+        <h2 id="security-title">Confira o pacote baixado</h2>
+        <p>
+          O release e esta página são produzidos pelo mesmo workflow, depois de
+          lint, typecheck, testes unitários, paridade Ruby, integração e testes
+          reais da extensão em Chrome headless.
+        </p>
+        <div class="checksum">
+          <span>SHA-256</span>
+          <code>{{SHA256}}</code>
+        </div>
+        <p>
+          Também é possível baixar o arquivo
+          <a href="SHA256SUMS.txt">SHA256SUMS.txt</a> ou auditar o
+          <a href="{{REPOSITORY_URL}}">código-fonte no GitHub</a>.
+        </p>
+      </section>
+
+      <aside class="notice">
+        <strong>Importante:</strong> este pacote é instalado manualmente como
+        extensão descompactada. O Chrome não instala extensões diretamente a
+        partir de um ZIP baixado fora da Chrome Web Store.
+      </aside>
+    </main>
+
+    <footer>
+      <span>Ponto na Certi {{VERSION}}</span>
+      <a href="{{REPOSITORY_URL}}/issues"
+        >Relatar problema ou sugerir recurso</a
+      >
+    </footer>
+  </body>
+</html>

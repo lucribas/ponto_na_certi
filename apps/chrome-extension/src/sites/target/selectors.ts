@@ -1,0 +1,20 @@
+/** Seletores observados em Channel.rb; qualquer mudança exige validação no DOM real. */
+export const CHANNEL_SELECTORS = {
+  loginForm: '#loginForm',
+  password: '[name="password"]',
+  pageSize: '#totalItensPagina',
+  content: '#conteudo',
+  startDate: '[name="dataInicial"]',
+  endDate: '[name="dataFinal"]',
+  filter: '[value*="Filtrar"]',
+  extractRows: '#tblListagem',
+  includeEntry: '#incluirNovoApontamento',
+  entryForm: '#apontamento_diario',
+  projectType: '#tpApontamentoProjeto',
+  project: '[id="apontamento.projetosSelecionado"]',
+  activityType: '[id="apontamento.idTipoAtividadeProjeto"]',
+  activity: '[id="apontamento.notificacaoSelecionada"]',
+  task: '[id="apontamento.idTarefa"]',
+  date: '#data',
+  duration: '[id="apontamento.duracao"]',
+} as const;

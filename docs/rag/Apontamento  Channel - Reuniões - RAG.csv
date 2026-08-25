@@ -1,0 +1,39 @@
+
+PROJETO,,,,,,
+,,,,,,
+Evento,Apontar horas para,Projeto,Tipo de atividade,Associar Atividade,Duração/hora,Comentário
+CERTI Informa,Projetos,F01C0078.0 Parada de Aprendizagem,Nenhum tipo de atividade relacionado,1.2 CERTI informa,,
+CERTI Tech,Projetos,F01C0078.0 Parada de Aprendizagem,Nenhum tipo de atividade relacionado,1.1 CERTI Tech,,
+Academia CERTI,Projetos,F01C0078.0 Parada de Aprendizagem,Nenhum tipo de atividade relacionado,1.3 Academia CERTI,,
+CERTI Fatos e Dados,Projetos,F01C0078.0 Parada de Aprendizagem,Nenhum tipo de atividade relacionado,1.4 CERTI fatos e dados,,
+CERTI Reflete,Projetos,F01C0078.0 Parada de Aprendizagem,Nenhum tipo de atividade relacionado,1.5 CERTI Reflete,,
+Design Review,Projetos,Respectivo projeto,-,Atividade relacionada ,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião de Design Review
+Bi-Weekly Embarcados,Projetos,Respectivo projeto,-,Atividade do projeto em execução no momento,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião de acompanhamento bi-semanal de embarcados
+Design Review,Projetos,Respectivo projeto,-,Atividade relacionada ,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião de Design Review
+Reunião quinzenal UX,Projetos,CERTI,9. Reunião,Atividade do projeto em execução no momento,,Reunião quinzenal de Design
+Design Review,Projetos,CERTI,Nenhum tipo de atividade relacionado,Atividade relacionada ,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião de Design Review
+Reunião periódica de área,Projetos,CERTI,Nenhum tipo de atividade relacionado,Atividade do projeto em execução no momento,,
+Festa CDM 40 anos,Projetos,F01C0078.0 Parada de Aprendizagem,Nenhum tipo de atividade relacionado,1.3 Academia CERTI,,
+
+
+
+AVULSO,,,,,,
+,,,,,,
+Evento,Apontar horas para,Cliente,Natureza da operação,Tipo de Atividade,Duração/hora,Comentário
+Design talk,Avulso,CERTI,13. Formação/Capacitação,Nenhum,,Design Talk
+Reunião mensal de Design da Certi,Avulso,CERTI,13. Formação/Capacitação,Nenhum,,Reunião mensal de design
+Reunião quinzenal da área de IA,Avulso,CERTI,13. Formação/Capacitação,Nenhum,A duração da reunião. Quem levar mais tempo para preparação de aprresentações deve apontar o tempo correspondente.,Reunião quinzenal de área de IA
+1x1 & reuniões de Feedback,Avulso,CERTI,13. Formação/Capacitação,F15C0072.0 - Formação CDM,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],"1x1
+ou
+Reunião de feedback"
+Lightning Talk,Avulso,CERTI,13. Formação/Capacitação,99601 - Lightning Talk,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Lightning Talk
+Preparação de material comum a área,Avulso,CERTI,13. Formação/Capacitação,Nenhum,,
+Reunião Geral CDM,Avulso,CERTI,9. Reunião,Não preencher,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião Geral CDM. Exemplo: Reunião Geral CDM&ICS Resultados 2o. Trimestre 2023.
+Reunião Coordenação Propostas CDM,Avulso,CERTI,9. Reunião,99430 - Prospecção de Negócios Embrapii,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião semanal de propostas
+Reunião Gestão Integrada,Avulso,CERTI,9. Reunião,,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião de gestão integrada
+Alinhamento LT's de SW,Avulso,CERTI,9. Reunião,F15C0072.0 - Formação CDM,,Alinhamento LT's de SW&FW
+Reunião Área de SW - Semanal,Avulso,CERTI,9. Reunião,Não preencher,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião da área de SW
+Weekly board técnico SW,Avulso,CERTI,10. Atividades Administrativas,Não preencher,[Considerar todo o tempo envolvido conforme sua participação e ausência total de sua atividade naquele momento],Reunião semanal do board técnico SW
+Jogos da Copa,Avulso,CERTI,301 - Outras Atividades,Nenhum,2h,jogos da copa
+Confraternização do CDM,Avulso,CERTI,48. Reunião de Gestão do CRIT,Nenhum,,
+Banco de horas,Avulso,CERTI,46. Banco de Horas,Nenhum,,

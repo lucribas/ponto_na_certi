@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Channel sintético</title>
+  </head>
+  <body>
+    <main id="conteudo">
+      <h1>Channel sintético</h1>
+      <select id="totalItensPagina">
+        <option>10</option>
+        <option>Não paginar</option></select
+      ><input name="dataInicial" /><input name="dataFinal" /><button
+        value="Filtrar"
+      >
+        Filtrar
+      </button>
+      <tbody id="tblListagem">
+        27/07/2026 08:00
+      </tbody>
+      <button id="incluirNovoApontamento">Incluir Novo Apontamento</button>
+      <form id="apontamento_diario">
+        <input id="tpApontamentoProjeto" type="radio" /><select
+          id="apontamento.projetosSelecionado"
+        >
+          <option>PROJETO_SINTETICO — descrição</option></select
+        ><select id="apontamento.idTipoAtividadeProjeto">
+          <option>Nenhum</option></select
+        ><select id="apontamento.notificacaoSelecionada">
+          <option>ATIVIDADE_SINTETICA — descrição</option></select
+        ><select id="apontamento.idTarefa">
+          <option>Nenhum</option></select
+        ><input id="data" /><input id="apontamento.duracao" /><button
+          id="btnSalvar"
+          type="submit"
+        >
+          Salvar
+        </button>
+      </form>
+    </main>
+    <script>
+      globalThis.__submitCount = 0;
+      document.querySelector('form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        globalThis.__submitCount += 1;
+      });
+    </script>
+  </body>
+</html>
