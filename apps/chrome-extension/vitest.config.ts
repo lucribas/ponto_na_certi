@@ -1,5 +1,9 @@
 import { defineConfig } from 'vitest/config';
 
+// Os dias civis processados pela extensão seguem o fuso da Fundação CERTI.
+// Fixá-lo aqui evita resultados diferentes entre estações locais e runners UTC.
+process.env.TZ = 'America/Sao_Paulo';
+
 export default defineConfig({
   test: {
     coverage: { enabled: false },

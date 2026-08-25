@@ -25,6 +25,8 @@ jobs:
     name: Test, build and package
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      TZ: America/Sao_Paulo
     defaults:
       run:
         working-directory: apps/chrome-extension

@@ -1086,6 +1086,7 @@ test('explica a permissão recusada e oferece nova tentativa', async () => {
 test('permite parar login, captura e envio somente enquanto estão em execução', async () => {
   const harness = await launchExtension();
   try {
+    await seedPreview(harness.serviceWorker);
     await harness.serviceWorker.evaluate(async () => {
       const stored = await chrome.storage.session.get('operationData');
       const operation = stored.operationData as Record<string, unknown>;
@@ -1170,6 +1171,7 @@ test('permite parar login, captura e envio somente enquanto estão em execução
       });
     });
     await harness.panel.reload();
+    await harness.panel.locator('#login-card > summary').click();
     await expect(
       harness.panel.getByRole('button', { name: 'Parar login' }),
     ).toBeVisible();
