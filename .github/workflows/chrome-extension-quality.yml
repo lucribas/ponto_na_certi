@@ -27,6 +27,8 @@ jobs:
     timeout-minutes: 30
     env:
       TZ: America/Sao_Paulo
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      CHROME_EXTENSION_PUBLIC_KEY: ${{ secrets.CHROME_EXTENSION_PUBLIC_KEY }}
     defaults:
       run:
         working-directory: apps/chrome-extension

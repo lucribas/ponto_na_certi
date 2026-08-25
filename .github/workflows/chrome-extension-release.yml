@@ -1,7 +1,14 @@
 name: Release Chrome extension
+run-name: Release da extensão a partir de ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_pages:
+        description: Publicar também o site de instalação no GitHub Pages
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -31,9 +38,10 @@ jobs:
     name: Validate release candidate
     needs: preflight
     uses: ./.github/workflows/chrome-extension-quality.yml
+    secrets: inherit
 
   prepare:
-    name: Prepare release and Pages artifact
+    name: Prepare release metadata
     needs: quality
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -69,33 +77,9 @@ jobs:
             exit 1
           fi
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
-        with:
-          path: apps/chrome-extension/release-site
-
-  deploy-pages:
-    name: Publish installation website
-    needs: prepare
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
-
   publish-release:
     name: Create tag and GitHub Release
-    needs:
-      - prepare
-      - deploy-pages
+    needs: prepare
     runs-on: ubuntu-24.04
     timeout-minutes: 5
 
@@ -114,10 +98,50 @@ jobs:
           RELEASE_ZIP: artifacts/ponto-na-certi-extension-${{ needs.prepare.outputs.version }}.zip
         run: >-
           gh release create "${RELEASE_TAG}"
-          "${RELEASE_ZIP}#Extensão Chrome instalável (ZIP)"
+          "${RELEASE_ZIP}#Extensão Chrome (ZIP para instalação manual)"
           "artifacts/SHA256SUMS.txt#Checksum SHA-256"
           --repo "${GITHUB_REPOSITORY}"
           --target "${GITHUB_SHA}"
           --title "Ponto na Certi ${RELEASE_VERSION}"
           --generate-notes
           --latest
+
+  deploy-pages:
+    name: Publish optional installation website
+    if: ${{ inputs.publish_pages }}
+    needs:
+      - prepare
+      - publish-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout released commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download released package
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: chrome-extension-package
+          path: apps/chrome-extension/artifacts
+
+      - name: Build installation website
+        working-directory: apps/chrome-extension
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: node scripts/build-release-site.mjs
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          path: apps/chrome-extension/release-site
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

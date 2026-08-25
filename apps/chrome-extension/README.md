@@ -47,10 +47,10 @@ Para publicar uma versão:
 
 1. Em `apps/chrome-extension`, execute `npm version 0.2.0 --no-git-tag-version` (substituindo pela versão desejada) para atualizar `package.json` e `package-lock.json`; depois coloque o mesmo valor em `manifest.json`.
 2. Integre a alteração em `main` e confirme que o workflow de qualidade passou.
-3. No GitHub, abra **Actions → Release Chrome extension → Run workflow** e selecione `main`.
-4. O workflow repete todos os testes, recusa uma versão cuja tag já exista, cria a tag `vX.Y.Z`, publica o GitHub Release com ZIP e checksum e implanta o tutorial no GitHub Pages.
+3. No GitHub, abra **Actions → Release Chrome extension → Run workflow** e selecione `main`. Marque **Publicar também o site de instalação** somente se desejar atualizar o GitHub Pages.
+4. O workflow repete todos os testes, recusa uma versão cuja tag já exista e cria a tag `vX.Y.Z` e o GitHub Release com ZIP e checksum. A criação da release não depende do GitHub Pages.
 
-Antes da primeira release, abra **Settings → Pages → Build and deployment** e escolha **GitHub Actions** como origem. A página ficará em `https://lucribas.github.io/ponto_na_certi/` e oferecerá um ZIP estável (`latest`), o ZIP versionado, SHA-256 e instruções para instalação/atualização manual. O ZIP não é instalável com um clique: por segurança, o Chrome exige extraí-lo e usar **Carregar sem compactação** em `chrome://extensions` enquanto a extensão não estiver na Chrome Web Store.
+Para usar a opção do site, abra antes **Settings → Pages → Build and deployment** e escolha **GitHub Actions** como origem. A página ficará em `https://lucribas.github.io/ponto_na_certi/` e oferecerá um ZIP estável (`latest`), o ZIP versionado, SHA-256 e instruções para instalação/atualização manual. O ZIP não é instalável com um clique: por segurança, o Chrome exige extraí-lo e usar **Carregar sem compactação** em `chrome://extensions` enquanto a extensão não estiver na Chrome Web Store.
 
 `npm run release:site` permite revisar localmente o conteúdo que será publicado em `release-site/`. A pasta é descartável e ignorada pelo Git; a fonte versionada da página fica em `site/`.
 

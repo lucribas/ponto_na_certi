@@ -109,6 +109,26 @@ O código, os comandos de desenvolvimento, a documentação de permissões e as
 instruções completas de instalação estão em
 [`apps/chrome-extension`](apps/chrome-extension/README.md).
 
+### Instalar uma versão publicada
+
+1. Abra a página da
+   [versão mais recente](https://github.com/lucribas/ponto_na_certi/releases/latest).
+2. Em **Assets**, baixe `ponto-na-certi-extension-X.Y.Z.zip` e extraia seu
+   conteúdo para uma pasta permanente. O arquivo `manifest.json` deve ficar na
+   raiz dessa pasta.
+3. Abra `chrome://extensions` no Google Chrome e habilite o **Modo do
+   desenvolvedor**.
+4. Clique em **Carregar sem compactação** e selecione a pasta extraída.
+5. No menu de extensões do Chrome, fixe **Ponto na Certi** e clique em seu ícone
+   para abrir o painel lateral.
+
+O Chrome não instala diretamente um ZIP distribuído fora da Chrome Web Store.
+Mantenha a pasta extraída no mesmo local enquanto usar a extensão. Para
+atualizar, baixe a nova versão, substitua os arquivos dessa pasta e clique em
+**Recarregar** no cartão da extensão em `chrome://extensions`.
+
+### Desenvolvimento local
+
 Início rápido:
 
 ```bash
@@ -119,6 +139,19 @@ npm run build
 
 Depois, abra `chrome://extensions`, habilite o modo do desenvolvedor e carregue a
 pasta `apps/chrome-extension/dist` sem compactação.
+
+### Publicar uma nova release
+
+1. Atualize a versão com `npm version X.Y.Z --no-git-tag-version` dentro de
+   `apps/chrome-extension` e use a mesma versão em `manifest.json`.
+2. Envie a alteração para `main` e aguarde o workflow de qualidade concluir.
+3. No GitHub, abra **Actions → Release Chrome extension → Run workflow** e
+   selecione `main`.
+
+A pipeline repete todas as validações, cria a tag `vX.Y.Z` e publica uma
+GitHub Release com o ZIP instalável e seu `SHA256SUMS.txt`. A opção
+**Publicar também o site de instalação** só deve ser marcada depois de configurar
+**Settings → Pages → GitHub Actions** no repositório.
 
 ## Sistemas integrados
 
