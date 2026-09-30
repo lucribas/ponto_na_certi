@@ -1,5 +1,5 @@
 import { BoundaryValidationError } from '../shared/errors';
-import type { OperationData } from './types';
+import { emptyOperation, type OperationData } from './types';
 
 const KEY = 'operationData';
 
@@ -7,6 +7,20 @@ export async function loadOperationData(): Promise<OperationData | undefined> {
   const result = await chrome.storage.session.get(KEY);
   const value = result[KEY];
   if (value === undefined) return undefined;
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    value.version === 1
+  ) {
+    const fresh = {
+      ...emptyOperation(crypto.randomUUID()),
+      message:
+        'Extensão atualizada. Reconecte e capture novamente; suas TAGs e regras foram preservadas.',
+    };
+    await saveOperationData(fresh);
+    return fresh;
+  }
   if (!isOperationData(value)) {
     throw new BoundaryValidationError('Estado transitório incompatível.');
   }
@@ -21,7 +35,7 @@ function isOperationData(value: unknown): value is OperationData {
   if (typeof value !== 'object' || value === null) return false;
   const record = value as Record<string, unknown>;
   return (
-    record.version === 1 &&
+    record.version === 2 &&
     Number.isInteger(record.revision) &&
     typeof record.operationId === 'string' &&
     typeof record.phase === 'string' &&

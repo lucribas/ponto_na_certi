@@ -1,3 +1,4 @@
+import type { PeriodRequest } from '../domain';
 import type {
   OperationConfig,
   PublicOperationState,
@@ -14,6 +15,11 @@ export type { TabRole } from '../application/types';
 export type IncomingMessage =
   | { readonly type: 'GET_STATE' }
   | { readonly type: 'START_OPERATION'; readonly operationId: string }
+  | {
+      readonly type: 'SET_OPERATION_PERIOD';
+      readonly operationId: string;
+      readonly period: PeriodRequest;
+    }
   | { readonly type: 'FETCH_CHANNEL_CATALOG'; readonly operationId: string }
   | { readonly type: 'CONNECT_GOOGLE_CALENDAR'; readonly operationId: string }
   | {

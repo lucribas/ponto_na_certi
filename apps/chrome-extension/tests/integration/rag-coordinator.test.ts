@@ -28,7 +28,7 @@ const tag = {
 
 function operation(catalogId: string, ragItemId: string): OperationData {
   return {
-    version: 1,
+    version: 2,
     revision: 1,
     operationId: 'rag-operation',
     phase: 'preview',
@@ -55,7 +55,7 @@ function operation(catalogId: string, ragItemId: string): OperationData {
       {
         id: date,
         date,
-        ahgoraDuration: '00:30',
+        sourceDuration: '00:30',
         status: 'missing',
         decision: 'selected',
         allocations: [

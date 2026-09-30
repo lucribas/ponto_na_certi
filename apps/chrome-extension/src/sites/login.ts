@@ -14,7 +14,7 @@ export function shouldOpenFreshLoginTab(
 }
 
 export interface LoginSiteDefinition {
-  readonly role: 'source' | 'target';
+  readonly role: 'source' | 'senior' | 'target';
   readonly loginUrl: string;
   readonly destinationUrl: string;
   readonly tabPatterns: readonly string[];
@@ -262,3 +262,17 @@ export async function submitAutofilledLogin(
   });
   return formSeen ? 'not-filled' : 'already-authenticated';
 }
+
+export const AHGORA_LOGIN_SITE = LOGIN_SITES[0];
+export const CHANNEL_LOGIN_SITE = LOGIN_SITES[1];
+export const SENIOR_LOGIN_SITE = {
+  role: 'senior',
+  loginUrl: 'https://gestaodoponto.certi.org.br/gestaoponto-frontend/',
+  destinationUrl:
+    'https://gestaodoponto.certi.org.br/gestaoponto-frontend/time-adjustment/employee/',
+  tabPatterns: ['https://gestaodoponto.certi.org.br/*'],
+  formSelector: '#index-vm-username',
+  usernameSelector: '#index-vm-username',
+  passwordSelector: '#index-vm-password',
+  workSelector: 'a[href*="/time-adjustment/employee/"]',
+} as const satisfies LoginSiteDefinition;

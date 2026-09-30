@@ -26,6 +26,7 @@ describe('MV3 foundation', () => {
     expect(manifest.optional_permissions).toEqual(['notifications']);
     expect(manifest).not.toHaveProperty('host_permissions');
     expect(manifest.optional_host_permissions).toEqual([
+      'https://gestaodoponto.certi.org.br/*',
       'https://www.ahgora.com.br/*',
       'https://app.ahgora.com.br/*',
       'https://channel.certi.org.br/*',

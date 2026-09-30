@@ -4,27 +4,27 @@ export type Comparison =
   | {
       readonly status: 'missing';
       readonly date: CivilDate;
-      readonly ahgoraMinutes: number;
-      readonly ahgoraDuration: string;
+      readonly sourceMinutes: number;
+      readonly sourceDuration: string;
     }
   | {
       readonly status: 'equal';
       readonly date: CivilDate;
-      readonly ahgoraMinutes: number;
+      readonly sourceMinutes: number;
       readonly channelMinutes: number;
-      readonly ahgoraDuration: string;
+      readonly sourceDuration: string;
       readonly channelDuration: string;
     }
   | {
       readonly status: 'divergent';
       readonly date: CivilDate;
-      readonly ahgoraMinutes: number;
+      readonly sourceMinutes: number;
       readonly channelMinutes: number;
-      readonly ahgoraDuration: string;
+      readonly sourceDuration: string;
       readonly channelDuration: string;
     };
 
-export function compareAhgoraWithChannel(
+export function compareSourceWithChannel(
   ahgoraRows: readonly ComparableWorkRecord[],
   channelRows: readonly ComparableWorkRecord[],
 ): readonly Comparison[] {
@@ -39,26 +39,26 @@ export function compareAhgoraWithChannel(
         return {
           status: 'missing',
           date: ahgora.date,
-          ahgoraMinutes: ahgora.durationMinutes,
-          ahgoraDuration: ahgora.duration,
+          sourceMinutes: ahgora.durationMinutes,
+          sourceDuration: ahgora.duration,
         };
       }
       if (channel.duration === ahgora.duration) {
         return {
           status: 'equal',
           date: ahgora.date,
-          ahgoraMinutes: ahgora.durationMinutes,
+          sourceMinutes: ahgora.durationMinutes,
           channelMinutes: channel.durationMinutes,
-          ahgoraDuration: ahgora.duration,
+          sourceDuration: ahgora.duration,
           channelDuration: channel.duration,
         };
       }
       return {
         status: 'divergent',
         date: ahgora.date,
-        ahgoraMinutes: ahgora.durationMinutes,
+        sourceMinutes: ahgora.durationMinutes,
         channelMinutes: channel.durationMinutes,
-        ahgoraDuration: ahgora.duration,
+        sourceDuration: ahgora.duration,
         channelDuration: channel.duration,
       };
     });
@@ -72,10 +72,10 @@ export function missingCandidates(
       (comparison): comparison is Extract<Comparison, { status: 'missing' }> =>
         comparison.status === 'missing',
     )
-    .map(({ date, ahgoraMinutes, ahgoraDuration }) => ({
+    .map(({ date, sourceMinutes, sourceDuration }) => ({
       date,
-      durationMinutes: ahgoraMinutes,
-      duration: ahgoraDuration,
+      durationMinutes: sourceMinutes,
+      duration: sourceDuration,
     }));
 }
 

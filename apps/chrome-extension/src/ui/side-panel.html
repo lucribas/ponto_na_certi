@@ -201,13 +201,15 @@
         </header>
         <div class="dialog-body">
           <p id="help-dialog-description" class="stage-intro">
-            A extensão usa as sessões já autenticadas no Ahgora e no Channel.
-            Ela prepara uma prévia antes de qualquer envio.
+            A extensão usa as sessões já autenticadas nas fontes de ponto e no
+            Channel. Ela prepara uma prévia antes de qualquer envio.
           </p>
           <ol class="tutorial-steps">
             <li>
               <strong>Conecte as abas</strong>
-              <span>Abra e autentique Ahgora, Channel e Google Calendar.</span>
+              <span
+                >Conecte as fontes de ponto, Channel e Google Calendar.</span
+              >
             </li>
             <li>
               <strong>Defina as TAGs</strong>
@@ -499,6 +501,29 @@
         </button>
       </section>
 
+      <section class="card" aria-label="Período da operação">
+        <div class="field-grid">
+          <label
+            >Período
+            <select id="period-kind">
+              <option value="month" selected>Mês atual</option>
+              <option value="default">Mês anterior</option>
+              <option value="range">Intervalo inclusivo</option>
+            </select>
+          </label>
+          <label id="month-field"
+            >Mês de fechamento <input id="month" type="month"
+          /></label>
+          <label id="start-field" hidden
+            >Data inicial <input id="start" type="date"
+          /></label>
+          <label id="end-field" hidden
+            >Data final <input id="end" type="date"
+          /></label>
+        </div>
+        <p id="source-period-hint" class="hint"></p>
+      </section>
+
       <details
         id="login-card"
         class="card collapsible-card workflow-card"
@@ -513,11 +538,11 @@
         </summary>
         <div class="collapsible-content">
           <p class="hint">
-            Abre Ahgora, Channel e Google Calendar de uma vez. A extensão não lê
-            nem armazena as senhas.
+            Abre as fontes necessárias ao período, Channel e Google Calendar. A
+            extensão não lê nem armazena as senhas.
           </p>
           <div class="system-progress" aria-label="Progresso das conexões">
-            <div>
+            <div id="login-ahgora-card" hidden>
               <div class="progress-heading">
                 <strong>Ahgora</strong>
                 <output id="login-source-state">Não aberto</output>
@@ -529,6 +554,20 @@
               ></progress>
               <p id="login-source-detail" class="hint">
                 A página do Ahgora ainda não foi aberta.
+              </p>
+            </div>
+            <div id="login-senior-card" hidden>
+              <div class="progress-heading">
+                <strong>Senior</strong>
+                <output id="login-senior-state">Não aberto</output>
+              </div>
+              <progress
+                id="login-senior-progress"
+                max="100"
+                value="0"
+              ></progress>
+              <p id="login-senior-detail" class="hint">
+                A página do Senior ainda não foi aberta.
               </p>
             </div>
             <div>
@@ -588,6 +627,11 @@
           <span>Ahgora</span
           ><output id="source-state" class="pill">Não registrado</output
           ><button id="register-source" type="button">Registrar</button>
+        </div>
+        <div class="tab-row">
+          <span>Senior</span
+          ><output id="senior-state" class="pill">Não registrado</output
+          ><button id="register-senior" type="button">Registrar</button>
         </div>
         <div class="tab-row">
           <span>Channel</span
@@ -1616,25 +1660,6 @@
           >
         </summary>
         <div class="collapsible-content">
-          <div class="field-grid">
-            <label
-              >Período
-              <select id="period-kind">
-                <option value="month" selected>Mês atual</option>
-                <option value="default">Mês anterior</option>
-                <option value="range">Intervalo inclusivo</option>
-              </select>
-            </label>
-            <label id="month-field"
-              >Mês de fechamento <input id="month" type="month"
-            /></label>
-            <label id="start-field" hidden
-              >Data inicial <input id="start" type="date"
-            /></label>
-            <label id="end-field" hidden
-              >Data final <input id="end" type="date"
-            /></label>
-          </div>
           <details class="operation-overrides">
             <summary>Overrides desta operação</summary>
             <div class="details-content">
@@ -1658,13 +1683,23 @@
           <div class="stage-feedback" aria-labelledby="capture-progress-title">
             <h3 id="capture-progress-title">Progresso</h3>
             <div class="system-progress" aria-label="Progresso">
-              <div>
+              <div hidden>
                 <div class="progress-heading">
                   <strong>Ahgora</strong>
                   <output id="ahgora-progress-state">Aguardando</output>
                 </div>
                 <progress id="ahgora-progress" max="100" value="0"></progress>
                 <p id="ahgora-progress-detail" class="hint">
+                  A captura ainda não começou.
+                </p>
+              </div>
+              <div hidden>
+                <div class="progress-heading">
+                  <strong>Senior</strong>
+                  <output id="senior-progress-state">Aguardando</output>
+                </div>
+                <progress id="senior-progress" max="100" value="0"></progress>
+                <p id="senior-progress-detail" class="hint">
                   A captura ainda não começou.
                 </p>
               </div>

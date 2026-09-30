@@ -105,3 +105,15 @@ function closingWindow(
     mirrorMonths: [makeClosingMonth(selected.year, selected.month)],
   };
 }
+
+/** Compare values, independent of property order after Chrome serialization. */
+export function samePeriodRequest(
+  a: PeriodRequest | undefined,
+  b: PeriodRequest,
+): boolean {
+  if (!a || a.kind !== b.kind) return false;
+  if (a.kind === 'month' && b.kind === 'month') return a.month === b.month;
+  if (a.kind === 'range' && b.kind === 'range')
+    return a.start === b.start && a.end === b.end;
+  return a.kind === 'default';
+}

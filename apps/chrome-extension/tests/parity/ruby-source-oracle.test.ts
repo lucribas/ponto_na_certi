@@ -8,7 +8,7 @@ import {
   assignExpertProject,
   calculatePunchDays,
   civilDate,
-  compareAhgoraWithChannel,
+  compareSourceWithChannel,
   formatRubyDurationMinutes,
 } from '../../src/domain';
 
@@ -72,7 +72,7 @@ describe.skipIf(!legacySourceAvailable)('actual Ruby source oracle', () => {
       { date: '2026-08-18', status: 'divergent' },
     ]);
     expect(
-      compareAhgoraWithChannel(
+      compareSourceWithChannel(
         [
           {
             date: civilDate('2026-08-18'),

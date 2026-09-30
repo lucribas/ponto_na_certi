@@ -46,6 +46,95 @@ try {
     ],
   });
 
+  // Exercise the packaged worker against the exact Senior origin; every response
+  // is synthetic and stays inside Playwright routing.
+  await context.route(
+    'https://gestaodoponto.certi.org.br/**',
+    async (route) => {
+      const url = new URL(route.request().url());
+      requests.set(url.pathname, (requests.get(url.pathname) ?? 0) + 1);
+      assert.equal(route.request().method(), 'GET');
+      if (url.pathname.startsWith('/gestaoponto-frontend/')) {
+        await route.fulfill({
+          contentType: 'text/html',
+          body: `<title>Senior sintética</title>
+        <main>Meus acertos de ponto</main><script>
+        globalThis.angular = { element() { return { injector() { return {
+          get() { return { async get(path, config) {
+            const response = await fetch(path + '?' + new URLSearchParams(config.params));
+            if (!response.ok) throw {status: response.status};
+            return {data: await response.json()};
+          }}; }
+        }; }}; }};
+        </script>`,
+        });
+        return;
+      }
+      const start = url.searchParams.get('dataInicial');
+      const end = url.searchParams.get('dataFinal');
+      const days = monitorFixture.times
+        ? [
+            {
+              date: monitorFixture.date,
+              times: monitorFixture.times,
+              status: 0,
+            },
+          ]
+        : [
+            {
+              date: '2026-09-24',
+              times: ['08:00', '12:00', '13:00', '17:00'],
+              status: 1,
+            },
+            {
+              date: '2026-09-25',
+              times: ['08:00', '12:00', '13:00', '17:17'],
+              status: 0,
+            },
+          ];
+      const matching = days.filter(
+        (day) => day.date >= start && day.date <= end,
+      );
+      let data;
+      if (url.pathname.includes('buscar-codigo-calculo-competencia')) {
+        data = {
+          result: {
+            codigoCalculo: {
+              codigoCalculo: 10,
+              inicioApuracao: '2026-09-21',
+              fimApuracao: '2099-12-31',
+            },
+            colaborador: { id: 'fixture-employee' },
+          },
+        };
+      } else if (url.pathname.endsWith('/count')) {
+        assert.equal(url.searchParams.get('filtraPendencias'), 'COLABORADOR');
+        data = { result: { total: matching.length, totalPendencia: 0 } };
+      } else {
+        assert.equal(url.searchParams.has('filtraPendencias'), false);
+        data = {
+          colaborador: { id: 'fixture-employee' },
+          apuracao: matching.map((day) => ({
+            dataApuracao: day.date,
+            status: { codigo: day.status },
+            incidentes: [],
+            marcacoes: day.times.map((time) => ({
+              dataAcesso: day.date,
+              dataApuracao: day.date,
+              horaAcesso: time,
+              origem: 'E',
+              uso: 2,
+            })),
+          })),
+        };
+      }
+      await route.fulfill({ json: data });
+    },
+  );
+  const senior = await context.newPage();
+  await senior.goto(
+    'https://gestaodoponto.certi.org.br/gestaoponto-frontend/time-adjustment/employee/fixture-employee/pending',
+  );
   const extensionLogs = [];
   context.on('serviceworker', (worker) => {
     worker.on('console', (message) => {
@@ -76,7 +165,16 @@ try {
     const targetTab = tabs.find((tab) => tab.url === `${fixtureOrigin}/target`);
     if (sourceTab?.id === undefined || targetTab?.id === undefined)
       throw new Error('fixture-tabs-not-found');
+    const seniorTab = tabs.find((tab) =>
+      tab.url?.includes('/employee/fixture-employee/'),
+    );
+    if (seniorTab?.id === undefined) throw new Error('senior-tab-not-found');
     return {
+      senior: {
+        id: seniorTab.id,
+        origin: 'https://gestaodoponto.certi.org.br',
+        subjectKey: 'fixture-employee',
+      },
       source: { id: sourceTab.id, origin: fixtureOrigin },
       target: { id: targetTab.id, origin: fixtureOrigin },
     };
@@ -94,7 +192,7 @@ try {
   assert.deepEqual(success.state.captureProgress, {
     ahgora: {
       status: 'done',
-      detail: '1 dia(s) recebido(s); 1 com duração calculada.',
+      detail: '1 dia(s) recebido(s).',
     },
     channel: {
       status: 'done',
@@ -112,7 +210,7 @@ try {
   assert.deepEqual(success.state.sourceRows, [
     { date: '2026-08-20', duration: '08:00', durationMinutes: 480 },
   ]);
-  assert.equal(success.state.items[0]?.ahgoraDuration, '08:00');
+  assert.equal(success.state.items[0]?.sourceDuration, '08:00');
   const inferredTag = success.state.config.tags.find(
     (tag) => tag.id === success.state.config.defaultTagId,
   );
@@ -161,6 +259,75 @@ try {
   assert.equal(failedState.state.captureProgress.comparison.status, 'failed');
   assert.notEqual(failedState.state.captureProgress.ahgora.status, 'running');
   assert.equal(requests.get('/api-espelho/apuracao/2026-09'), 1);
+
+  const seniorPeriod = {
+    kind: 'range',
+    start: '2026-09-21',
+    end: '2026-09-25',
+  };
+  const changedPeriod = await send(panel, {
+    type: 'SET_OPERATION_PERIOD',
+    operationId: failureId,
+    period: seniorPeriod,
+  });
+  assert.equal(changedPeriod.ok, true, JSON.stringify(changedPeriod));
+  const seniorCapture = await send(panel, {
+    type: 'CAPTURE_AND_COMPARE',
+    operationId: failureId,
+    config: { ...operationConfig('2026-09'), period: seniorPeriod },
+  });
+  assert.equal(seniorCapture.ok, true, JSON.stringify(seniorCapture));
+  assert.equal(seniorCapture.state.captureProgress.senior.status, 'done');
+  assert.equal(seniorCapture.state.items.length, 2);
+  assert.equal(
+    seniorCapture.state.items.find((item) => item.date === '2026-09-25')
+      .sourceDuration,
+    '08:17',
+  );
+  const pendingDay = seniorCapture.state.items.find(
+    (item) => item.date === '2026-09-24',
+  );
+  assert.equal(pendingDay.sourceRequiresReview, true);
+  assert.equal(pendingDay.decision, 'pending');
+  assert.equal(requests.get('/api-espelho/apuracao/2026-09'), 1);
+  const selected = await send(panel, {
+    type: 'SELECT_REMAINING',
+    operationId: failureId,
+  });
+  assert.equal(selected.ok, true, JSON.stringify(selected));
+  assert.equal(
+    selected.state.items.find((item) => item.date === '2026-09-24').decision,
+    'pending',
+  );
+  // An unused historical source must not invalidate a Senior-only preview.
+  await source.close();
+  await panel.waitForFunction(async () => {
+    const { operationData } = await chrome.storage.session.get('operationData');
+    return operationData.sourceTab === undefined;
+  });
+  const afterClose = await send(panel, { type: 'GET_STATE' });
+  assert.equal(afterClose.state.items.length, 2);
+  // A same-origin collaborator switch must discard the preview and queue.
+  await senior.goto(
+    'https://gestaodoponto.certi.org.br/gestaoponto-frontend/time-adjustment/employee/another-employee/all',
+  );
+  await panel.waitForFunction(async () => {
+    const { operationData } = await chrome.storage.session.get('operationData');
+    return operationData.seniorTab === undefined;
+  });
+  const afterSwitch = await send(panel, { type: 'GET_STATE' });
+  assert.equal(afterSwitch.state.items.length, 0);
+  assert.equal(afterSwitch.state.queue.length, 0);
+  await senior.goto(
+    'https://gestaodoponto.certi.org.br/gestaoponto-frontend/time-adjustment/employee/fixture-employee/all',
+  );
+
+  const discovered = await send(panel, {
+    type: 'DISCOVER_OPEN_TABS',
+    operationId: failureId,
+  });
+  assert.equal(discovered.ok, true, JSON.stringify(discovered));
+  assert.equal(discovered.state.seniorTab.subjectKey, 'fixture-employee');
 
   const notificationTest = await send(panel, {
     type: 'TEST_PUNCH_ALERT',
@@ -292,6 +459,8 @@ try {
         'PREVISTA vazia e preenchida ignoradas; duração 08:00 calculada',
         'primeira captura cria e persiste a TAG padrão pela última marcação válida do Channel',
         'batida realizada inválida encerra progresso como failed',
+        'Senior consulta todos os dias mesmo na tela Pendentes, calcula 08:17 e exclui pendências da seleção em lote',
+        'fechar Ahgora preserva prévia Senior; trocar colaborador invalida prévia e fila',
         'notificação nativa e documento offscreen de áudio criados',
         'checkbox ativa consultas de 30 minutos e o alerta limpa após correção',
       ],
@@ -473,11 +642,12 @@ async function seedOperation(page, operationId, bindings) {
       });
       await chrome.storage.session.set({
         operationData: {
-          version: 1,
+          version: 2,
           revision: 0,
           operationId: id,
           phase: 'setup',
           sourceTab: registered.source,
+          seniorTab: registered.senior,
           targetTab: registered.target,
           items: [],
           queue: [],
@@ -504,7 +674,10 @@ async function prepareExtension(destination, hostPermission, publicKey) {
   const manifestPath = resolve(destination, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   manifest.key = publicKey;
-  manifest.host_permissions = [hostPermission];
+  manifest.host_permissions = [
+    hostPermission,
+    'https://gestaodoponto.certi.org.br/*',
+  ];
   manifest.permissions = [...manifest.permissions, 'notifications'];
   manifest.optional_permissions = manifest.optional_permissions.filter(
     (permission) => permission !== 'notifications',

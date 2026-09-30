@@ -108,7 +108,7 @@ try {
     async ({ operationId: id, bindings: registered }) => {
       await chrome.storage.session.set({
         operationData: {
-          version: 1,
+          version: 2,
           revision: 0,
           operationId: id,
           phase: 'setup',
@@ -251,7 +251,7 @@ try {
   );
   if (items.length !== expectedDates.length)
     throw new Error('preview-dates-incomplete');
-  if (items.some((item) => item.ahgoraDuration === '—'))
+  if (items.some((item) => item.sourceDuration === '—'))
     throw new Error('preview-ahgora-duration-unavailable');
   if (
     items.some(
@@ -270,7 +270,7 @@ try {
       progress: expectedProgress,
       items: items.map((item) => ({
         date: item.date,
-        ahgoraDuration: item.ahgoraDuration,
+        sourceDuration: item.sourceDuration,
         channelDuration: item.channelDuration,
         channelProject: item.channelProject,
         channelActivity: item.channelActivity,
@@ -314,7 +314,7 @@ try {
       async ({ operationId: id, bindings: registered }) => {
         await chrome.storage.session.set({
           operationData: {
-            version: 1,
+            version: 2,
             revision: 0,
             operationId: id,
             phase: 'setup',
@@ -348,7 +348,7 @@ try {
         period: { start, end },
         items: verifiedItems.map((item) => ({
           date: item.date,
-          ahgoraDuration: item.ahgoraDuration,
+          sourceDuration: item.sourceDuration,
           channelDuration: item.channelDuration,
           channelProject: item.channelProject,
           channelActivity: item.channelActivity,

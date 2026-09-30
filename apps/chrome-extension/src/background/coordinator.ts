@@ -26,7 +26,7 @@ import {
   assignExpertProject,
   calculatePunchDays,
   civilDate,
-  compareAhgoraWithChannel,
+  compareSourceWithChannel,
   formatDurationMinutes,
   formatBrazilianDate,
   parseDurationMinutes,
@@ -35,7 +35,18 @@ import {
   type ComparableWorkRecord,
   type ChannelAssignment,
 } from '../domain';
-import type { CaptureAhgoraResult } from '../sites/source';
+import type {
+  CaptureSourceResult,
+  CapturedPunchDay,
+  SourceDayIssue,
+} from '../sites/punch-source';
+import { sourceBinding } from '../application/types';
+import {
+  planSourceSlices,
+  sourceForDate,
+  SOURCE_NAMES,
+  type DateRange,
+} from '../domain';
 import type {
   InjectedChannelFillResult,
   InjectedChannelReadInput,
@@ -48,7 +59,8 @@ export interface CoordinatorAdapters {
   captureSource(
     tabId: number,
     period: NonNullable<OperationData['resolvedPeriod']>,
-  ): Promise<CaptureAhgoraResult>;
+  ): Promise<CaptureSourceResult>;
+  captureSenior?(tabId: number, range: DateRange): Promise<CaptureSourceResult>;
   readTarget(
     tabId: number,
     input: InjectedChannelReadInput,
@@ -73,15 +85,23 @@ export async function captureAndCompareOperation(
   state: OperationData,
   adapters: CoordinatorAdapters,
 ): Promise<OperationData> {
-  if (!state.sourceTab || !state.targetTab || !state.config) {
+  if (!state.targetTab || !state.config) {
     throw new Error(
-      'Registre as abas Ahgora e Channel e informe a configuração.',
+      'Registre as abas das fontes de ponto e Channel e informe a configuração.',
     );
   }
-  const { sourceTab, targetTab, config } = state;
+  const { targetTab, config } = state;
   const period = resolvePeriod(config.period, {
     today: () => adapters.today,
   });
+  const slices = planSourceSlices(period, adapters.today);
+  if (!slices.length)
+    throw new Error('Escolha um período com datas já decorridas.');
+  for (const slice of slices)
+    if (!sourceBinding(state, slice.provider))
+      throw new Error(
+        `Conecte ${SOURCE_NAMES[slice.provider]} para este período.`,
+      );
   const calendarSettings = config.googleCalendar;
   const calendarEnabled = Boolean(
     calendarSettings &&
@@ -92,9 +112,19 @@ export async function captureAndCompareOperation(
   );
   let progress: CaptureProgress = {
     ahgora: {
-      status: 'running',
-      detail: `Consultando ${String(period.mirrorMonths.length)} mês(es) do espelho…`,
+      status: slices.some((s) => s.provider === 'ahgora') ? 'running' : 'done',
+      detail: slices.some((s) => s.provider === 'ahgora')
+        ? 'Consultando o espelho ponto…'
+        : 'Não necessário neste período.',
     },
+    ...(slices.some((s) => s.provider === 'senior')
+      ? {
+          senior: {
+            status: 'waiting' as const,
+            detail: 'Aguardando consulta Senior.',
+          },
+        }
+      : {}),
     channel: {
       status: 'running',
       detail: 'Resolvendo sessão e consultando o Extrato via DWR…',
@@ -110,7 +140,7 @@ export async function captureAndCompareOperation(
         },
     comparison: {
       status: 'waiting',
-      detail: 'Aguardando Ahgora, Channel e Google Calendar.',
+      detail: 'Aguardando ponto, Channel e Google Calendar.',
     },
   };
   // Serializa apenas a persistência dos snapshots. As consultas continuam em
@@ -134,37 +164,86 @@ export async function captureAndCompareOperation(
   await reportProgress();
 
   const sourcePromise = (async () => {
-    try {
-      const source = await adapters.captureSource(sourceTab.id, period);
+    const sourceDays: CapturedPunchDay[] = [];
+    const sourceIssues: SourceDayIssue[] = [];
+    const calculation: ReturnType<typeof calculatePunchDays> = {
+      records: [],
+      warnings: [],
+    };
+    for (const slice of slices) {
       assertCaptureNotCancelled(state, adapters);
-      if (!source.ok) throw new Error(source.error.message);
-      let calculation: ReturnType<typeof calculatePunchDays>;
+      const binding = sourceBinding(state, slice.provider);
+      if (!binding) throw new Error('Conexão da fonte perdida.');
+      if (progress[slice.provider]?.status !== 'running')
+        await updateProgress(slice.provider, {
+          status: 'running',
+          detail: `Consultando ${SOURCE_NAMES[slice.provider]} de ${slice.start} a ${slice.end}…`,
+        });
       try {
-        calculation = calculatePunchDays(source.days, config.overrides);
-      } catch {
-        throw new Error(
-          'O Ahgora retornou batidas em um formato não suportado.',
+        const source =
+          slice.provider === 'ahgora'
+            ? await adapters.captureSource(
+                binding.id,
+                resolvePeriod(
+                  { kind: 'range', start: slice.start, end: slice.end },
+                  { today: () => adapters.today },
+                ),
+              )
+            : await adapters.captureSenior?.(binding.id, slice);
+        assertCaptureNotCancelled(state, adapters);
+        if (!source) throw new Error('Adaptador Senior indisponível.');
+        if (!source.ok) throw new Error(source.error.message);
+        const days = source.days.filter(
+          (day) => day.date >= slice.start && day.date <= slice.end,
         );
+        if (new Set(days.map((day) => day.date)).size !== days.length)
+          throw new Error('A fonte retornou dias duplicados.');
+        sourceDays.push(
+          ...days.map((day) => ({ ...day, provider: slice.provider })),
+        );
+        sourceIssues.push(...(source.issues ?? []));
+        const blocked = new Set(
+          (source.issues ?? [])
+            .filter((i) => i.severity === 'blocked')
+            .map((i) => i.date),
+        );
+        try {
+          const calculated = calculatePunchDays(
+            days.filter((day) => !blocked.has(day.date)),
+            config.overrides,
+          );
+          (calculation.records as (typeof calculated.records)[number][]).push(
+            ...calculated.records,
+          );
+          (calculation.warnings as (typeof calculated.warnings)[number][]).push(
+            ...calculated.warnings,
+          );
+        } catch {
+          throw new Error(
+            `O ${SOURCE_NAMES[slice.provider]} retornou batidas em um formato não suportado.`,
+          );
+        }
+        await updateProgress(slice.provider, {
+          status: 'done',
+          detail: `${String(days.length)} dia(s) recebido(s).`,
+        });
+      } catch (error) {
+        const detail = captureFailureMessage(
+          error,
+          `Não foi possível consultar ${SOURCE_NAMES[slice.provider]}.`,
+        );
+        await updateProgress(slice.provider, { status: 'failed', detail });
+        throw new Error(detail, { cause: error });
       }
-      const sourceRows: readonly ComparableWorkRecord[] =
-        calculation.records.map(({ date, duration, durationMinutes }) => ({
-          date,
-          duration,
-          durationMinutes,
-        }));
-      await updateProgress('ahgora', {
-        status: 'done',
-        detail: `${String(source.days.length)} dia(s) recebido(s); ${String(calculation.records.length)} com duração calculada.`,
-      });
-      return { calculation, sourceRows, sourceDays: source.days };
-    } catch (error) {
-      const detail = captureFailureMessage(
-        error,
-        'Não foi possível consultar o Ahgora.',
-      );
-      await updateProgress('ahgora', { status: 'failed', detail });
-      throw new Error(detail, { cause: error });
     }
+    const sourceRows = calculation.records.map(
+      ({ date, duration, durationMinutes }) => ({
+        date,
+        duration,
+        durationMinutes,
+      }),
+    );
+    return { calculation, sourceRows, sourceDays, sourceIssues };
   })();
 
   const targetPromise = (async () => {
@@ -241,7 +320,8 @@ export async function captureAndCompareOperation(
   if (targetResult.status === 'rejected') throw targetResult.reason;
   if (calendarResult.status === 'rejected') throw calendarResult.reason;
 
-  const { calculation, sourceRows, sourceDays } = sourceResult.value;
+  const { calculation, sourceRows, sourceDays, sourceIssues } =
+    sourceResult.value;
   const {
     targetResult: capturedTarget,
     targetRows,
@@ -271,11 +351,12 @@ export async function captureAndCompareOperation(
         )
       : calendarResult.value?.composition;
   const comparisons = compareCapturedDays(sourceRows, targetByDate);
-  const warningDates = new Set(
-    calculation.warnings.map((warning) => warning.date),
-  );
+  const warningDates = new Set([
+    ...calculation.warnings.map((warning) => warning.date),
+    ...sourceIssues.map((issue) => issue.date),
+  ]);
   const items: PreviewItem[] = comparisons.map((comparison) => {
-    const blocked = comparison.ahgoraMinutes <= 0;
+    const blocked = comparison.sourceMinutes <= 0;
     let automaticallySelected =
       comparison.status === 'missing' &&
       !blocked &&
@@ -294,9 +375,9 @@ export async function captureAndCompareOperation(
     );
     const calendarConflicts = [
       ...(calendarComposition?.conflictsByDate.get(comparison.date) ?? []),
-      ...(calendarMinutes > comparison.ahgoraMinutes
+      ...(calendarMinutes > comparison.sourceMinutes
         ? [
-            `Os eventos do Calendar somam ${formatDurationMinutes(calendarMinutes)}, acima das ${comparison.ahgoraDuration} do Ahgora.`,
+            `Os eventos do Calendar somam ${formatDurationMinutes(calendarMinutes)}, acima das ${comparison.sourceDuration} do ponto.`,
           ]
         : []),
     ];
@@ -306,7 +387,7 @@ export async function captureAndCompareOperation(
     }
     const remainingMinutes = Math.max(
       0,
-      comparison.ahgoraMinutes - calendarMinutes,
+      comparison.sourceMinutes - calendarMinutes,
     );
     if (automaticallySelected) {
       try {
@@ -370,8 +451,8 @@ export async function captureAndCompareOperation(
                   id: comparison.date,
                   mode: 'percentage' as const,
                   value: '100',
-                  durationMinutes: comparison.ahgoraMinutes,
-                  duration: comparison.ahgoraDuration,
+                  durationMinutes: comparison.sourceMinutes,
+                  duration: comparison.sourceDuration,
                   tagId,
                   isRemainder: true,
                 }
@@ -403,7 +484,11 @@ export async function captureAndCompareOperation(
     return {
       id: comparison.date,
       date: comparison.date,
-      ahgoraDuration: comparison.ahgoraDuration,
+      sourceDuration: comparison.sourceDuration,
+      sourceProvider: sourceForDate(comparison.date),
+      sourceRequiresReview: sourceIssues.some(
+        (issue) => issue.date === comparison.date,
+      ),
       ...(comparison.status === 'missing'
         ? {}
         : { channelDuration: comparison.channelDuration }),
@@ -430,7 +515,14 @@ export async function captureAndCompareOperation(
       ...(blocked
         ? { warning: 'Duração não positiva; preenchimento bloqueado.' }
         : warningDates.has(comparison.date)
-          ? { warning: 'Batidas com aviso; revise antes de selecionar.' }
+          ? {
+              warning:
+                sourceIssues
+                  .filter((issue) => issue.date === comparison.date)
+                  .map((issue) => issue.message)
+                  .join(' ') ||
+                'Batidas com aviso; revise antes de selecionar.',
+            }
           : automaticWarning === undefined
             ? {}
             : { warning: automaticWarning }),
@@ -447,12 +539,26 @@ export async function captureAndCompareOperation(
       items.push({
         id: warning.date,
         date: warning.date,
-        ahgoraDuration: '—',
+        sourceDuration: '—',
+        sourceProvider: sourceForDate(warning.date),
         status: 'blocked',
         decision: 'pending',
         warning: `Dia omitido; revise as batidas: ${punches.join(', ')}.`,
       });
     }
+  }
+  for (const issue of sourceIssues) {
+    if (itemDates.has(issue.date)) continue;
+    itemDates.add(issue.date);
+    items.push({
+      id: issue.date,
+      date: issue.date,
+      sourceDuration: '—',
+      sourceProvider: sourceForDate(issue.date),
+      status: 'blocked',
+      decision: 'pending',
+      warning: issue.message,
+    });
   }
   items.sort((left, right) => left.date.localeCompare(right.date));
   await updateProgress('comparison', {
@@ -492,14 +598,14 @@ export async function captureAndCompareOperation(
 
 /**
  * Barreira pura entre captura e preenchimento da revisão. A comparação sempre
- * parte dos dias completos do Ahgora, independentemente da ordem em que as
+ * parte dos dias completos do ponto, independentemente da ordem em que as
  * fontes terminaram.
  */
 function compareCapturedDays(
   sourceRows: readonly ComparableWorkRecord[],
   targetByDate: ReadonlyMap<CivilDate, ComparableWorkRecord>,
-): ReturnType<typeof compareAhgoraWithChannel> {
-  const comparisons = compareAhgoraWithChannel(sourceRows, [
+): ReturnType<typeof compareSourceWithChannel> {
+  const comparisons = compareSourceWithChannel(sourceRows, [
     ...targetByDate.values(),
   ]);
   const expectedDates = new Set(sourceRows.map((row) => row.date));
@@ -508,7 +614,7 @@ function compareCapturedDays(
     comparisons.some((comparison) => !expectedDates.has(comparison.date))
   ) {
     throw new Error(
-      'A comparação não preservou todos os dias calculados do Ahgora.',
+      'A comparação não preservou todos os dias calculados do ponto.',
     );
   }
   return comparisons;
@@ -638,7 +744,7 @@ export function editDivergentItem(
   const balance = sourceTotal - channelTotal;
   if (balance <= 0)
     throw new Error(
-      'O Channel não possui saldo menor que o Ahgora neste dia. Exclua marcações antes de editar.',
+      'O Channel não possui saldo menor que o ponto neste dia. Exclua marcações antes de editar.',
     );
   const tagId = state.config?.defaultTagId;
   const allocation: PreviewAllocation = {
@@ -672,7 +778,9 @@ export function selectRemainingItems(state: OperationData): OperationData {
   return {
     ...state,
     items: state.items.map((item) =>
-      item.status === 'missing' && item.decision === 'pending'
+      item.status === 'missing' &&
+      item.decision === 'pending' &&
+      !item.sourceRequiresReview
         ? { ...item, decision: 'selected' }
         : item,
     ),

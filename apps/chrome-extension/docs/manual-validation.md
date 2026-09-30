@@ -112,3 +112,23 @@ Execute somente com autorização e participação do usuário. Não copie HTML,
 | 2026-08-23 | Progresso real       | Ahgora/Channel                 | pass      | Três transições intermediárias observadas no estado da extensão headless.    |
 | 2026-08-23 | Catálogo/TAGs        | projetos/atividades/cache      | pass      | 11 projetos e 12 atividades consultados; combinação padrão reconhecida.      |
 | 2026-08-23 | Leitura detalhada    | projeto/atividade por dia      | pass      | Dias 20–21/08 exibiram duração, projeto e atividade no Chrome headless.      |
+
+## Registro Senior — 29/09/2026, extensão 0.2.0
+
+Validação instrumentada em Chromium de teste, pela extensão, com login manual:
+21–25/09 retornou 5 dias; os 4 dias com batidas coincidiram com a tabela visível.
+Todos e Pendentes produziram o mesmo conjunto. A consulta isolada de 25/09 retornou
+4 batidas e 08:17. Nenhuma gravação no ponto ou Channel foi executada.
+A versão do serviço Senior não foi exposta; origem consultada:
+`https://gestaodoponto.certi.org.br`.
+
+Typecheck e lint aprovados. Testes: 131 unitários, 91 de integração, 12 de paridade
+e 21 cenários E2E. Quatro testes opcionais do oráculo Ruby ignorados porque as
+fontes legadas não estão neste checkout. O smoke Chrome headless da extensão
+empacotada passou, incluindo leitura Senior, pendências, detecção de sessão,
+troca de colaborador, fechamento de fonte dispensada e monitoramento do almoço.
+Build, verificação de manifesto e geração do ZIP 0.2.0 concluídos.
+
+Duas competências Senior com dados não foram validadas na conta real; esse cenário
+está coberto por fixture. Jornadas entre datas diferentes permanecem bloqueadas.
+Detalhes sanitizados em [implementation-results.md](features/senior-source/implementation-results.md).

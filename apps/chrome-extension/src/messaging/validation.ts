@@ -1,3 +1,4 @@
+import { civilDate, closingMonth } from '../domain';
 import type { IncomingMessage, TabRole } from './messages';
 import { BoundaryValidationError } from '../shared/errors';
 
@@ -5,6 +6,7 @@ type UnknownRecord = Record<string, unknown>;
 
 const MESSAGE_TYPES = new Set<IncomingMessage['type']>([
   'GET_STATE',
+  'SET_OPERATION_PERIOD',
   'START_OPERATION',
   'FETCH_CHANNEL_CATALOG',
   'CONNECT_GOOGLE_CALENDAR',
@@ -45,7 +47,7 @@ function isOperationId(value: unknown): value is string {
 }
 
 function isTabRole(value: unknown): value is TabRole {
-  return value === 'source' || value === 'target';
+  return value === 'source' || value === 'senior' || value === 'target';
 }
 
 export function isIncomingMessage(value: unknown): value is IncomingMessage {
@@ -57,6 +59,8 @@ export function isIncomingMessage(value: unknown): value is IncomingMessage {
   if (value.type === 'GET_STATE') return true;
   if (!isOperationId(value.operationId)) return false;
   switch (value.type) {
+    case 'SET_OPERATION_PERIOD':
+      return isPeriodRequest(value.period);
     case 'OPEN_LOGIN_PAGES':
       return typeof value.autoSubmit === 'boolean';
     case 'SET_PENDING_ROLE':
@@ -212,4 +216,25 @@ export function assertContentSender(
   ) {
     throw new BoundaryValidationError('Origem do remetente incompatível.');
   }
+}
+
+export function isPeriodRequest(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  try {
+    if (value.kind === 'default') return true;
+    if (value.kind === 'month' && typeof value.month === 'string') {
+      closingMonth(value.month);
+      return true;
+    }
+    if (
+      value.kind === 'range' &&
+      typeof value.start === 'string' &&
+      typeof value.end === 'string'
+    ) {
+      return civilDate(value.start) <= civilDate(value.end);
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }

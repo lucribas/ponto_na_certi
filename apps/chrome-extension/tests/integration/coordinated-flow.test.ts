@@ -395,7 +395,7 @@ describe('coordenador real sobre DOM sintético', () => {
     expect(preview.items).toMatchObject([
       {
         date: '2026-07-27',
-        ahgoraDuration: '08:00',
+        sourceDuration: '08:00',
         status: 'missing',
         decision: 'selected',
         allocations: [{ duration: '08:00', isRemainder: true }],
@@ -968,7 +968,7 @@ describe('coordenador real sobre DOM sintético', () => {
         {
           id: '2026-07-27',
           date: civilDate('2026-07-27'),
-          ahgoraDuration: '08:00',
+          sourceDuration: '08:00',
           channelDuration: '08:00',
           channelProject: 'Múltiplas TAGs',
           channelActivity: '2 marcações',
@@ -1403,7 +1403,7 @@ describe('coordenador real sobre DOM sintético', () => {
         {
           id: '2026-07-26',
           date: civilDate('2026-07-26'),
-          ahgoraDuration: '08:00',
+          sourceDuration: '08:00',
           status: 'missing',
           decision: 'selected',
           allocations: [
@@ -1430,7 +1430,7 @@ describe('coordenador real sobre DOM sintético', () => {
         {
           id: '2026-07-27',
           date: civilDate('2026-07-27'),
-          ahgoraDuration: '08:00',
+          sourceDuration: '08:00',
           status: 'missing',
           decision: 'selected',
           tagId: 'tag-default',

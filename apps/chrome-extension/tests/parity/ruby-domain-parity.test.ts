@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { civilDate, fixedClock } from '../../src/domain/civil-date';
-import { compareAhgoraWithChannel } from '../../src/domain/comparison';
+import { compareSourceWithChannel } from '../../src/domain/comparison';
 import { assignExpertProject } from '../../src/domain/expert';
 import { defaultPeriod, resolvePeriod } from '../../src/domain/period';
 import { calculatePunchDays } from '../../src/domain/punches';
@@ -62,7 +62,7 @@ describe('caracterização Ruby → TypeScript com dados sintéticos', () => {
     const date = civilDate('2026-08-18');
     const channelOnly = civilDate('2026-08-19');
     expect(
-      compareAhgoraWithChannel(
+      compareSourceWithChannel(
         [{ date, durationMinutes: 450, duration: '07:30' }],
         [
           { date, durationMinutes: 420, duration: '07:00' },
@@ -74,14 +74,14 @@ describe('caracterização Ruby → TypeScript com dados sintéticos', () => {
       {
         status: 'equal',
         date,
-        ahgoraMinutes: 450,
+        sourceMinutes: 450,
         channelMinutes: 450,
-        ahgoraDuration: '07:30',
+        sourceDuration: '07:30',
         channelDuration: '07:30',
       },
     ]);
     expect(
-      compareAhgoraWithChannel(
+      compareSourceWithChannel(
         [{ date, durationMinutes: 450, duration: '07:30' }],
         [{ date, durationMinutes: 450, duration: '7:30' }],
       )[0]?.status,

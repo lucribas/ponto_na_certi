@@ -5,7 +5,7 @@ import type { OperationConfig } from '../../src/application/types';
 import {
   calculatePunchDays,
   civilDate,
-  compareAhgoraWithChannel,
+  compareSourceWithChannel,
   defaultPeriod,
   formatDurationMinutes,
   formatBrazilianDate,
@@ -257,10 +257,10 @@ describe.runIf(runAuthenticated)('sites autenticados, sem submissão', () => {
           durationMinutes,
         }),
       );
-      const comparisons = compareAhgoraWithChannel(sourceRows, targetRows);
+      const comparisons = compareSourceWithChannel(sourceRows, targetRows);
       expect(comparisons.length).toBeGreaterThan(0);
       const candidate = comparisons.find(
-        (item) => item.status === 'missing' && item.ahgoraMinutes > 0,
+        (item) => item.status === 'missing' && item.sourceMinutes > 0,
       );
 
       const include = channel.locator('#incluirNovoApontamento');
@@ -409,7 +409,7 @@ describe.runIf(runAuthenticatedRagWrite)(
       const ahgora = await context.newPage();
       const channel = await context.newPage();
       let cleared = false;
-      let ahgoraMinutes = 0;
+      let sourceMinutes = 0;
 
       const readDay = async () => {
         const result = await channel.evaluate(runInjectedChannelApiRead, {
@@ -439,7 +439,7 @@ describe.runIf(runAuthenticatedRagWrite)(
       };
       const restoreDefault = async (): Promise<void> => {
         await clearDay();
-        if (ahgoraMinutes <= 0) return;
+        if (sourceMinutes <= 0) return;
         const restored = await channel.evaluate(runInjectedChannelApiWrite, {
           kind: 'PROJETOS',
           project: config.project,
@@ -448,8 +448,8 @@ describe.runIf(runAuthenticatedRagWrite)(
           task: config.task,
           comments: 'Restaurado após validação automatizada dos modelos RAG.',
           date: testDate,
-          duration: formatDurationMinutes(ahgoraMinutes),
-          durationMinutes: ahgoraMinutes,
+          duration: formatDurationMinutes(sourceMinutes),
+          durationMinutes: sourceMinutes,
           expectedExistingMinutes: 0,
           timeoutMs: 30_000,
         } satisfies InjectedChannelFillInput);
@@ -472,7 +472,7 @@ describe.runIf(runAuthenticatedRagWrite)(
         ).records.find(({ date }) => date === testDate);
         if (!record || record.durationMinutes <= 2)
           throw new Error('AHGORA_RAG_DAY_DURATION_UNAVAILABLE');
-        ahgoraMinutes = record.durationMinutes;
+        sourceMinutes = record.durationMinutes;
 
         await loginChannel(channel, config);
         await safeNavigate(
@@ -542,7 +542,7 @@ describe.runIf(runAuthenticatedRagWrite)(
         if (cleared) {
           await restoreDefault();
           const restored = await readDay();
-          expect(restored).toMatchObject({ durationMinutes: ahgoraMinutes });
+          expect(restored).toMatchObject({ durationMinutes: sourceMinutes });
           expect(restored?.markings).toHaveLength(1);
           expect(restored?.markings?.[0]?.project).toContain(
             config.project.replace(/^\S+\s+/, ''),

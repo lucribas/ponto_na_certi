@@ -7,9 +7,10 @@ Fundação CERTI. Ela reúne as informações do ponto e da agenda, permite revi
 distribuição das horas e envia ao Channel somente as marcações autorizadas pelo
 usuário.
 
-O fluxo integra três sistemas:
+O fluxo integra ponto, agenda e apontamentos de projetos:
 
-- lê as batidas do espelho de ponto no Ahgora;
+- lê as batidas no Ahgora até **20/09/2026** e na Senior desde **21/09/2026,
+  inclusive**;
 - lê eventos do Google Calendar;
 - compara as horas calculadas com os apontamentos existentes;
 - registra no Channel as marcações de projetos revisadas e selecionadas pelo
@@ -22,24 +23,61 @@ antes de qualquer gravação. Ela não solicita nem armazena credenciais.
 
 Nosso mascote é aquele relógio de ponto que já viu horas extras demais e resolveu
 tomar uma atitude: em vez de ficar só marcando entrada e saída, agora ele corre
-atrás do Ahgora, confere a agenda no Google Calendar e entrega tudo organizado no
+atrás do Ahgora ou da Senior, confere a agenda no Google Calendar e entrega tudo organizado no
 Channel. A cara de poucos amigos é só pose — no fundo, ele está aqui para encarar a
 parte repetitiva do apontamento e deixar você apenas com o que realmente importa:
 revisar, confirmar e seguir o dia.
 
 ## Funcionalidades
 
-- **Conexão integrada:** conecta Ahgora, Channel e Google Calendar de uma só vez.
-- **Google Calendar:** detecta e reconhece automaticamente eventos do calendario usando um conjunto de regras pré configuradas.
+- **Conexão por período:** exibe e conecta somente as fontes de ponto necessárias,
+  junto com Channel e Google Calendar.
+- **Google Calendar:** reconhece eventos usando um conjunto de regras pré-configuradas.
 - **Fluxo guiado:** organiza o uso em Conectar, Regras, Capturar, Revisar e Enviar.
-- **Captura automática:** reúne e compara os dados dos três sistemas.
-- **Períodos flexíveis:** permite escolher um mês ou intervalo de datas.
+- **Captura automática:** reúne e compara ponto, agenda e apontamentos; intervalos
+  mistos consultam Ahgora e Senior, cada um nas datas sob sua responsabilidade.
+- **Períodos flexíveis:** permite escolher um mês ou intervalo inclusivo de datas,
+  mantendo o fechamento mensal de 26 a 25.
 - **TAGs:** associa projetos e atividades do Channel às marcações.
 - **Templates e regras:** reutiliza divisões e automatiza marcações recorrentes.
 - **Revisão:** mostra horas, eventos, divergências e bloqueios antes do envio.
+- **Pendências Senior:** exigem revisão e seleção individual, sem seleção em lote.
 - **Divisão de horas:** distribui o dia por percentual ou duração.
 - **Envio seguro:** envia somente as marcações revisadas e selecionadas.
 - **Privacidade:** reutiliza as sessões abertas sem armazenar credenciais.
+
+## Fonte de ponto por período
+
+Escolha o **Período da operação** antes de conectar. As etapas **1. Abrir,
+autenticar e conectar** e **3. Capturar e comparar** seguem essa seleção:
+
+| Intervalo selecionado                 | Fonte de ponto exibida e consultada   |
+| ------------------------------------- | ------------------------------------- |
+| Até 20/09/2026                        | Ahgora                                |
+| Desde 21/09/2026, inclusive           | Senior                                |
+| Abrange datas antes e depois do corte | Ahgora até 20/09 e Senior desde 21/09 |
+
+Fontes dispensadas ficam ocultas e não geram pedidos de permissão, tentativas de
+login ou consultas de captura. Channel e Google Calendar continuam no fluxo.
+
+O mês de **setembro/2026**, por exemplo, corresponde a **26/08–25/09**: a extensão
+consulta Ahgora de 26/08 a 20/09 e Senior de 21/09 a 25/09. O intervalo efetivo
+aparece no painel; datas futuras não são capturadas. Alterar o período descarta a
+prévia e as seleções anteriores, exigindo nova captura.
+
+Na Senior, faça login manualmente em
+[Gestão do Ponto](https://gestaodoponto.certi.org.br/gestaoponto-frontend/) e abra
+**Meus acertos de ponto**. A extensão detecta a aba autenticada e consulta todos os
+dias do intervalo, mesmo quando a tela está no filtro **Pendentes**.
+
+As horas são calculadas pelas batidas realizadas, sem somar marcações previstas ou
+saldos. Dias sem batidas, com horários inválidos, quantidade ímpar de marcações ou
+jornadas entre datas diferentes ficam bloqueados para envio. Dias calculáveis com
+pendência podem ser selecionados individualmente após revisão; isso não aprova
+nem altera o ponto na Senior.
+
+O monitoramento do almoço usa a fonte responsável pela data de hoje,
+independentemente do período escolhido para análise.
 
 ## Segurança
 
@@ -48,6 +86,9 @@ revisar, confirmar e seguir o dia.
 - As permissões são limitadas aos sistemas integrados e solicitadas somente quando
   necessárias.
 - O acesso ao Google Calendar é somente para leitura.
+- A integração Senior também é somente para leitura. O colaborador é identificado
+  pela aba autenticada e pela resposta da API; não há usuário pessoal fixado no
+  código. Trocar de colaborador invalida a captura e exige reconexão.
 - Nenhuma marcação é enviada ao Channel sem revisão e confirmação do usuário.
 - Os envios são realizados um de cada vez e interrompidos se houver uma resposta
   inesperada, reduzindo o risco de duplicidade.
@@ -56,7 +97,9 @@ revisar, confirmar e seguir o dia.
 ## Screenshots
 
 As telas abaixo apresentam o fluxo principal da extensão, da conexão com os
-sistemas até o envio das marcações revisadas ao Channel.
+sistemas até o envio das marcações revisadas ao Channel. Foram capturadas antes da
+integração Senior; na interface atual, os cards de ponto variam conforme o período
+selecionado.
 
 <table>
   <tr>
@@ -127,6 +170,14 @@ Mantenha a pasta extraída no mesmo local enquanto usar a extensão. Para
 atualizar, baixe a nova versão, substitua os arquivos dessa pasta e clique em
 **Recarregar** no cartão da extensão em `chrome://extensions`.
 
+Ao migrar de uma versão anterior à integração Senior, reconecte os sistemas e
+capture novamente: operações transitórias e filas antigas são descartadas. TAGs,
+templates, regras e demais configurações locais são preservados.
+
+As mudanças das versões **0.2.0 e 0.2.1**, as validações realizadas e os limites
+conhecidos estão no
+[registro da implementação Senior](apps/chrome-extension/docs/features/senior-source/implementation-results.md).
+
 ### Desenvolvimento local
 
 Início rápido:
@@ -155,7 +206,8 @@ GitHub Release com o ZIP instalável e seu `SHA256SUMS.txt`. A opção
 
 ## Sistemas integrados
 
-- **Ahgora:** leitura do espelho de ponto;
+- **Ahgora:** leitura do espelho de ponto até 20/09/2026;
+- **Senior:** leitura das batidas desde 21/09/2026, inclusive;
 - **Google Calendar:** leitura de calendários e eventos;
 - **Channel:** leitura, comparação e registro das marcações de projetos.
 

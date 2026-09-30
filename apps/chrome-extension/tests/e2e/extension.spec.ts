@@ -101,6 +101,151 @@ test('bloqueia etapas dependentes da conexão e abre as etapas disponíveis pelo
   }
 });
 
+test('intervalo incompleto não trava conexão e permite corrigir para Senior', async () => {
+  const harness = await launchExtension();
+  try {
+    await harness.panel.locator('#period-kind').selectOption('range');
+    const pages = harness.context.pages().length;
+    const connect = harness.panel.getByRole('button', {
+      name: 'Detectar abas ou abrir logins',
+    });
+    await connect.click();
+    await expect(harness.panel.locator('#operation-status')).toContainText(
+      'Informe um período válido',
+    );
+    await expect(connect).toBeEnabled();
+    await expect(harness.panel.locator('#start')).toBeEnabled();
+    expect(harness.context.pages()).toHaveLength(pages);
+    await harness.panel.locator('#start').fill('2026-09-21');
+    await harness.panel.locator('#end').fill('2026-09-25');
+    await harness.panel.locator('#end').blur();
+    await expect(harness.panel.locator('#source-period-hint')).toHaveText(
+      '21/09/2026 a 25/09/2026 · Senior',
+    );
+    await expect(harness.panel.locator('#login-senior-card')).toBeVisible();
+    await expect(harness.panel.locator('#login-ahgora-card')).toBeHidden();
+  } finally {
+    await harness.context.close();
+  }
+});
+
+for (const scenario of [
+  {
+    name: 'histórico',
+    start: '2026-09-20',
+    end: '2026-09-20',
+    ahgora: true,
+    senior: false,
+  },
+  {
+    name: 'Senior',
+    start: '2026-09-21',
+    end: '2026-09-25',
+    ahgora: false,
+    senior: true,
+  },
+  {
+    name: 'misto',
+    start: '2026-09-20',
+    end: '2026-09-21',
+    ahgora: true,
+    senior: true,
+  },
+]) {
+  test(`exibe e solicita somente fontes necessárias no intervalo ${scenario.name}`, async () => {
+    const harness = await launchExtension();
+    try {
+      await seedPreview(harness.serviceWorker);
+      await harness.serviceWorker.evaluate(
+        async ({ ahgora, senior }) => {
+          const stored = await chrome.storage.session.get('operationData');
+          await chrome.storage.session.set({
+            operationData: {
+              ...(stored.operationData as Record<string, unknown>),
+              seniorTab: {
+                id: 3,
+                origin: 'https://gestaodoponto.certi.org.br',
+                subjectKey: 'fixture',
+              },
+              loginPreparation: {
+                ahgora: ahgora ? 'ready' : 'awaiting-user',
+                senior: senior ? 'ready' : 'awaiting-user',
+                channel: 'ready',
+                autoSubmit: true,
+              },
+            },
+          });
+        },
+        { ahgora: scenario.ahgora, senior: scenario.senior },
+      );
+      await harness.panel.reload();
+      await harness.panel.locator('#period-kind').selectOption('range');
+      await harness.panel.locator('#start').fill(scenario.start);
+      await harness.panel.locator('#end').fill(scenario.end);
+      await harness.panel.locator('#end').blur();
+      await expect(harness.panel.locator('#period-kind')).toBeEnabled();
+      await harness.panel.locator('#flow-login a').click();
+      await expect(harness.panel.locator('#login-ahgora-card')).toBeVisible({
+        visible: scenario.ahgora,
+      });
+      await expect(harness.panel.locator('#login-senior-card')).toBeVisible({
+        visible: scenario.senior,
+      });
+      await expect(harness.panel.locator('#stop-login')).toBeHidden();
+      await expect(harness.panel.locator('#open-logins')).toHaveText(
+        'Detectar abas ou abrir logins',
+      );
+      await harness.panel.locator('#flow-capture a').click();
+      await expect(harness.panel.locator('#ahgora-progress')).toBeVisible({
+        visible: scenario.ahgora,
+      });
+      await expect(harness.panel.locator('#senior-progress')).toBeVisible({
+        visible: scenario.senior,
+      });
+      await harness.panel.locator('#flow-login a').click();
+      await harness.panel.evaluate(() => {
+        const scope = globalThis as typeof globalThis & {
+          requestedOrigins?: string[];
+        };
+        const send = chrome.runtime.sendMessage.bind(chrome.runtime);
+        chrome.permissions.request = (permissions) => {
+          scope.requestedOrigins = permissions.origins ?? [];
+          return Promise.resolve(true);
+        };
+        chrome.permissions.contains = () => Promise.resolve(true);
+        chrome.runtime.sendMessage = (message: unknown) => {
+          if (
+            typeof message === 'object' &&
+            message !== null &&
+            'type' in message &&
+            (message.type === 'CONNECT_GOOGLE_CALENDAR' ||
+              message.type === 'OPEN_LOGIN_PAGES')
+          )
+            return send({ type: 'GET_STATE' });
+          return send(message);
+        };
+      });
+      await harness.panel.locator('#open-logins').click();
+      const origins = await harness.panel.evaluate(
+        () =>
+          (globalThis as typeof globalThis & { requestedOrigins?: string[] })
+            .requestedOrigins ?? [],
+      );
+      expect(origins.includes('https://www.ahgora.com.br/*')).toBe(
+        scenario.ahgora,
+      );
+      expect(origins.includes('https://app.ahgora.com.br/*')).toBe(
+        scenario.ahgora,
+      );
+      expect(origins.includes('https://gestaodoponto.certi.org.br/*')).toBe(
+        scenario.senior,
+      );
+    } finally {
+      await harness.context.close();
+    }
+  });
+}
+
 test('carrega duas páginas sintéticas/iframe e mantém a prévia inicialmente vazia', async () => {
   const harness = await launchExtension();
   try {
@@ -149,7 +294,7 @@ test('carrega duas páginas sintéticas/iframe e mantém a prévia inicialmente 
       'open',
       '',
     );
-    await expect(harness.panel.locator('#month-field')).toBeHidden();
+    await expect(harness.panel.locator('#month-field')).toBeVisible();
     await openRulesCard(harness.panel);
     await expect(harness.panel.locator('#capture-card')).not.toHaveAttribute(
       'open',
@@ -292,7 +437,15 @@ test('carrega duas páginas sintéticas/iframe e mantém a prévia inicialmente 
     await expect(harness.panel.locator('#start-field')).toBeVisible();
     await expect(harness.panel.locator('#end-field')).toBeVisible();
     await harness.panel.locator('#period-kind').selectOption('default');
-    await harness.panel.locator('#review-card > summary').click();
+    // A mudança do período descarta a captura anterior. Recarregue a fixture
+    // para testar os editores com uma nova prévia independente.
+    await expect(harness.panel.locator('#period-kind')).toBeEnabled();
+    await expect(harness.panel.locator('#preview > *')).toHaveCount(0);
+    await seedPreview(harness.serviceWorker);
+    await harness.panel.reload();
+    await harness.panel
+      .locator('.flow-overview a[aria-controls="review-card"]')
+      .click();
     await expect(
       harness.panel.getByRole('heading', { name: '5. Enviar ao Channel' }),
     ).toBeVisible();
@@ -854,6 +1007,11 @@ test('nova operação preserva conexões concluídas e limpa somente o trabalho 
         operationData: {
           ...operation,
           phase: 'completed',
+          seniorTab: {
+            id: 3,
+            origin: 'https://gestaodoponto.certi.org.br',
+            subjectKey: 'synthetic',
+          },
           loginPreparation: {
             ahgora: 'ready',
             channel: 'ready',
@@ -881,7 +1039,7 @@ test('nova operação preserva conexões concluídas e limpa somente o trabalho 
       '',
     );
     await expect(harness.panel.locator('#operation-status')).toContainText(
-      'conexões Ahgora e Channel preservadas',
+      'conexões preservadas',
     );
     await expect(harness.panel.locator('#preview')).toBeEmpty();
     const persisted = await harness.serviceWorker.evaluate(async () => {
@@ -2500,7 +2658,7 @@ async function seedPreview(worker: Worker): Promise<void> {
     });
     await chrome.storage.session.set({
       operationData: {
-        version: 1,
+        version: 2,
         revision: 1,
         operationId: 'e2e-operation',
         phase: 'preview',
@@ -2530,7 +2688,7 @@ async function seedPreview(worker: Worker): Promise<void> {
           {
             id: '2026-07-26',
             date: '2026-07-26',
-            ahgoraDuration: '08:00',
+            sourceDuration: '08:00',
             status: 'missing',
             decision: 'pending',
             tagId: 'tag-default',
@@ -2549,7 +2707,7 @@ async function seedPreview(worker: Worker): Promise<void> {
           {
             id: '2026-07-27',
             date: '2026-07-27',
-            ahgoraDuration: '08:00',
+            sourceDuration: '08:00',
             channelDuration: '08:00',
             channelMarkings: [
               {
@@ -2577,7 +2735,7 @@ async function seedPreview(worker: Worker): Promise<void> {
           {
             id: '2026-07-28',
             date: '2026-07-28',
-            ahgoraDuration: '08:00',
+            sourceDuration: '08:00',
             channelDuration: '07:30',
             channelMarkings: [
               {
@@ -2595,7 +2753,7 @@ async function seedPreview(worker: Worker): Promise<void> {
           {
             id: '2026-07-29',
             date: '2026-07-29',
-            ahgoraDuration: '—',
+            sourceDuration: '—',
             status: 'blocked',
             decision: 'pending',
             warning: 'Dia omitido; revise as batidas: 08:00, 12:00, 13:00.',

@@ -13,6 +13,32 @@ import {
 } from '../../../src/application/types';
 
 describe('serialização de efeitos da operação', () => {
+  it('encerra progresso Senior em falha sem deixar consulta em andamento', async () => {
+    const original: OperationData = {
+      ...previewState(),
+      captureProgress: {
+        ahgora: { status: 'done', detail: 'Dispensado' },
+        senior: { status: 'running', detail: 'Consultando' },
+        channel: { status: 'done', detail: 'Concluído' },
+        comparison: { status: 'waiting', detail: 'Aguardando' },
+      },
+    };
+    let current: OperationData | undefined = original;
+    const store = memoryStore(
+      () => current,
+      (value) => {
+        current = value;
+      },
+    );
+    await expect(
+      new OperationEffectLock().run(original, 'capture', store, () => {
+        throw new OperationDisplayError('Senior indisponível');
+      }),
+    ).rejects.toThrow('Senior indisponível');
+    expect(current.captureProgress?.senior?.status).toBe('failed');
+    expect(current.inFlight).toBeUndefined();
+  });
+
   it('rejeita duplo clique antes de executar um segundo efeito', async () => {
     const lock = new OperationEffectLock();
     const original = previewState();

@@ -4,7 +4,7 @@
 action (gesto activeTab) ── registra origem/aba ──┐
                                                   v
 side panel ── mensagens ──> service worker ── scripting.executeScript (MAIN)
-                              │                    ├─ API JSON Ahgora
+                              │                    ├─ APIs JSON Ahgora/Senior
                               │                    ├─ DWR + POST Channel
                               │                    └─ exportação ICS Calendar
                               v
@@ -24,7 +24,9 @@ Os adapters de captura e apontamento não navegam nem clicam. Ahgora usa `/api-e
 
 O Google Calendar possui dois adapters selecionados pelo usuário. O modo OAuth usa a API v3 oficial e `chrome.identity`. O modo **aba autenticada** pede somente `https://calendar.google.com/*`, registra a origem e executa em `MAIN` o GET `/calendar/exporticalzip?authuser=N`; a página aplica seus próprios cookies, que nunca são lidos pela extensão. O ZIP atravessa a fronteira somente em memória, tem limite de 32 MB, é aberto pelo service worker e os ICS selecionados são normalizados para o mesmo contrato de eventos do OAuth. Recorrências e exceções são expandidas apenas até o período solicitado. Fechar a aba ou mudar sua origem invalida esse binding e desativa a conexão, sem encerrar a sessão Google. Como o endpoint é a exportação oferecida pela interface web, só aparecem calendários exportáveis pela conta e uma política corporativa pode bloquear o modo.
 
-Durante `capturing`, o coordenador publica três marcos reais no `storage.session`: Ahgora em execução/Channel aguardando, Ahgora concluído/Channel em execução e ambos concluídos. Cada sistema tem sua própria barra indeterminada enquanto a request está aberta e seu próprio detalhe de contagem ou falha; não existe temporizador simulando porcentagem.
+Durante `capturing`, o coordenador publica progresso real de cada fonte necessária,
+Channel, Calendar e comparação em `storage.session`. Cada sistema mostra consulta,
+contagem ou falha; a prévia só é liberada após concluir todas as fontes obrigatórias.
 
 O coordenador cria uma fila e, após uma única autorização em **Enviar selecionados**, processa um item por vez. Antes e depois do POST consulta o extrato: igualdade é idempotente, divergência ou confirmação ausente interrompe a fila. Não há confirmação individual entre itens.
 
@@ -38,7 +40,7 @@ O registry é apenas uma barreira imediata em memória. Ele é limpo somente dep
 
 `tests/integration/coordinated-flow.test.ts` executa o coordenador de produção com adapters Ahgora/Channel sobre DOM sintético: captura, leitura, comparação, prévia, seleção e fila de preenchimento, inclusive cancelamento e ausência de submit. `tests/e2e/extension.spec.ts` carrega extensão + duas páginas/iframe, mas hidrata uma prévia para testar UI/dry-run; não substitui a validação manual do gesto `activeTab`.
 
-Os totais da prévia são derivados em `application/types.ts` exclusivamente de `durationMinutes`: **Capturado** soma todos os registros Ahgora efetivos em `sourceRows`; **Novos para revisar (pré-seleção)** soma itens `missing` com duração positiva e permanece como referência do conjunto originalmente revisável; **A preencher (selecionados)** soma apenas esse mesmo conjunto quando a decisão atual é `selected`. A UI apenas formata os minutos e nunca reconverte `ahgoraDuration` textual.
+Os totais da prévia são derivados em `application/types.ts` exclusivamente de `durationMinutes`: **Capturado** soma todos os registros de ponto efetivos em `sourceRows`; **Novos para revisar (pré-seleção)** soma itens `missing` com duração positiva e permanece como referência do conjunto originalmente revisável; **A preencher (selecionados)** soma apenas esse mesmo conjunto quando a decisão atual é `selected`. A UI apenas formata os minutos e nunca reconverte `ahgoraDuration` textual.
 
 A leitura detalhada do Channel também preserva identificador, duração e permissão de remoção de cada marcação. **Excluir** revalida o identificador no dia esperado, chama a mesma operação DWR `excluirApontamento(id)` usada pelo Channel e relê o dia antes de confirmar o sucesso; em seguida, as duas fontes são recapturadas para atualizar a prévia. A exclusão usa o mesmo lock por `operationId` das demais ações com efeito.
 
@@ -53,10 +55,23 @@ A leitura detalhada do Channel também preserva identificador, duração e permi
 - `completed`: todos os itens selecionados foram confirmados;
 - `cancelled`/`failed`: não há novas escritas.
 
-A UI apresenta cinco agrupamentos de tarefa: `Conectar`, `Regras`, `Capturar`, `Revisar` e `Enviar`. O card da etapa 2, `Regras`, reúne TAGs, templates e automações. A etapa 1 usa disclosure nativo e recolhe após Ahgora, Channel e Google Calendar serem conectados. O Calendar fica sempre habilitado e aparece como o terceiro card de conexão; seu modo de acesso fica no diálogo global **Configurações**. A etapa 3 contém configuração e feedback da leitura; a etapa 4 concentra comparação, TAGs e seleção; a etapa 5 contém autorização, progresso e confirmação da escrita.
+A UI apresenta cinco agrupamentos de tarefa: `Conectar`, `Regras`, `Capturar`, `Revisar` e `Enviar`. O card da etapa 2, `Regras`, reúne TAGs, templates e automações. A etapa 1 usa disclosure nativo e recolhe após as fontes do período, Channel e Google Calendar serem conectados. O Calendar fica sempre habilitado e aparece em seu próprio card de conexão; seu modo de acesso fica no diálogo global **Configurações**. A etapa 3 contém configuração e feedback da leitura; a etapa 4 concentra comparação, TAGs e seleção; a etapa 5 contém autorização, progresso e confirmação da escrita.
 
-Na captura, as leituras do Ahgora, Channel e Google Calendar são independentes e começam em paralelo. Cada conclusão atualiza seu próprio progresso; os snapshots são persistidos em ordem para evitar regressão visual. Uma quarta etapa explícita, `Comparação`, forma a barreira posterior: ela permanece aguardando, recebe os snapshots completos e só então compõe os dias da revisão. O painel rejeita respostas de storage com revisão ou progresso inferiores, evitando que uma leitura assíncrona antiga substitua a prévia final. A escrita no Channel permanece sequencial por segurança e idempotência.
+Na captura, as leituras de ponto, Channel e Google Calendar são independentes e começam em paralelo. Dentro da captura de ponto, os intervalos Ahgora e Senior são processados sequencialmente quando ambos são necessários. Cada conclusão atualiza seu próprio progresso; os snapshots são persistidos em ordem para evitar regressão visual. Uma quarta etapa explícita, `Comparação`, forma a barreira posterior: ela permanece aguardando, recebe os snapshots completos e só então compõe os dias da revisão. O painel rejeita respostas de storage com revisão ou progresso inferiores, evitando que uma leitura assíncrona antiga substitua a prévia final. A escrita no Channel permanece sequencial por segurança e idempotência.
 
 ## Manutenção de seletores
 
 Seletores ficam centralizados em `src/sites/source` e `src/sites/target`, acompanhados da referência Ruby e do status de validação. Uma fixture demonstra apenas o contrato sintético. Mudança real deve ser comprovada pelo checklist manual sem guardar HTML, screenshots ou conteúdo pessoal.
+
+## Fonte Senior e corte por data
+
+`domain/source-routing.ts` separa intervalos em Ahgora até 20/09/2026 e Senior desde
+21/09/2026. `sites/senior` resolve competências e consulta contagem/dias por `$http`
+no MAIN world, usando somente GET. A fronteira devolve dados mínimos de ponto;
+credenciais e payloads pessoais não são transportados para o estado da extensão.
+
+O estado transitório v2 mantém `sourceTab` (Ahgora) e `seniorTab`, com identidade
+Senior validada antes/depois das consultas. O período é definido antes da conexão.
+Mudar período ou perder conexão obrigatória invalida captura/fila; migração v1 exige
+recaptura. Os contratos comuns usam `sourceDuration`, `sourceMinutes` e o fornecedor
+por item. Consulte [decisões, evidências e limites](features/senior-source/implementation-results.md).

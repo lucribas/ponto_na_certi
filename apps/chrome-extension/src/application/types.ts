@@ -1,3 +1,9 @@
+import {
+  monthOf,
+  planSourceSlices,
+  resolvePeriod,
+  type PunchSourceId,
+} from '../domain';
 import type {
   CivilDate,
   ComparableWorkRecord,
@@ -12,8 +18,9 @@ import type {
   GoogleCalendarSettings,
 } from './settings';
 
-export type TabRole = 'source' | 'target';
-export type TabConnectionIssueReason = 'closed' | 'origin-changed';
+export type TabRole = 'source' | 'senior' | 'target';
+export type TabConnectionIssueReason =
+  'closed' | 'origin-changed' | 'subject-changed';
 
 export interface TabConnectionIssue {
   readonly role: TabRole;
@@ -23,6 +30,7 @@ export interface TabConnectionIssue {
 export interface RegisteredTab {
   readonly id: number;
   readonly origin: string;
+  readonly subjectKey?: string;
 }
 
 export type SystemProgressStatus =
@@ -35,6 +43,7 @@ export interface SystemProgress {
 
 export interface CaptureProgress {
   readonly ahgora: SystemProgress;
+  readonly senior?: SystemProgress;
   readonly channel: SystemProgress;
   readonly calendar?: SystemProgress;
   /** Barreira final que compõe os dias somente após todas as leituras. */
@@ -52,6 +61,9 @@ export type LoginSiteStatus =
 
 export interface LoginPreparation {
   readonly ahgora: LoginSiteStatus;
+  readonly senior?: LoginSiteStatus;
+  readonly seniorDetail?: string;
+  readonly seniorTabId?: number | undefined;
   readonly channel: LoginSiteStatus;
   readonly ahgoraDetail: string;
   readonly channelDetail: string;
@@ -143,7 +155,9 @@ export interface ChannelMarking {
 export interface PreviewItem {
   readonly id: string;
   readonly date: CivilDate;
-  readonly ahgoraDuration: string;
+  readonly sourceDuration: string;
+  readonly sourceProvider?: PunchSourceId;
+  readonly sourceRequiresReview?: boolean;
   readonly channelDuration?: string;
   readonly channelProject?: string;
   readonly channelActivity?: string;
@@ -162,7 +176,7 @@ export interface PreviewItem {
 }
 
 export interface OperationData {
-  readonly version: 1;
+  readonly version: 2;
   readonly revision: number;
   readonly operationId: string;
   readonly phase:
@@ -177,7 +191,10 @@ export interface OperationData {
     | 'failed';
   readonly pendingRole?: TabRole | undefined;
   readonly inFlight?: 'capture' | 'apply' | 'advance' | 'delete' | undefined;
+  /** Ahgora binding; kept named for compatibility with the existing adapter. */
   readonly sourceTab?: RegisteredTab | undefined;
+  readonly seniorTab?: RegisteredTab | undefined;
+  readonly requestedPeriod?: PeriodRequest;
   readonly targetTab?: RegisteredTab | undefined;
   /** Aba usada somente quando o Calendar está no modo de sessão web. */
   readonly calendarTab?: RegisteredTab | undefined;
@@ -216,7 +233,7 @@ export interface OperationTotals {
 
 export function emptyOperation(operationId: string): OperationData {
   return {
-    version: 1,
+    version: 2,
     revision: 0,
     operationId,
     phase: 'setup',
@@ -261,6 +278,7 @@ export function isStaleOperationState(
         : 2;
   const captureRank = (value: OperationData): number =>
     statusRank(value.captureProgress?.ahgora.status) +
+    statusRank(value.captureProgress?.senior?.status) +
     statusRank(value.captureProgress?.channel.status) +
     statusRank(value.captureProgress?.calendar?.status) +
     statusRank(value.captureProgress?.comparison?.status);
@@ -305,5 +323,62 @@ export function operationTotals(state: OperationData): OperationTotals {
       0,
     ),
     selectedCount: selected.length,
+  };
+}
+
+export function requiredSources(
+  state: OperationData,
+  today: CivilDate,
+): readonly PunchSourceId[] {
+  return planSourceSlices(
+    resolvePeriod(
+      state.requestedPeriod ??
+        state.config?.period ?? { kind: 'month', month: monthOf(today) },
+      { today: () => today },
+    ),
+    today,
+  ).map((slice) => slice.provider);
+}
+export function sourceBinding(
+  state: OperationData,
+  provider: PunchSourceId,
+): RegisteredTab | undefined {
+  return provider === 'ahgora' ? state.sourceTab : state.seniorTab;
+}
+export function sourceConnectionsReady(
+  state: OperationData,
+  today: CivilDate,
+): boolean {
+  const sources = requiredSources(state, today);
+  return (
+    sources.length > 0 &&
+    sources.every((provider) => sourceBinding(state, provider) !== undefined)
+  );
+}
+export function clearCapturedOperation(state: OperationData): OperationData {
+  const rest = { ...state };
+  delete (rest as { sourceRows?: unknown }).sourceRows;
+  delete (rest as { targetRows?: unknown }).targetRows;
+  delete (rest as { resolvedPeriod?: unknown }).resolvedPeriod;
+  delete (rest as { captureProgress?: unknown }).captureProgress;
+  delete (rest as { writeProgress?: unknown }).writeProgress;
+  return {
+    ...rest,
+    revision: state.revision + 1,
+    phase: 'setup',
+    inFlight: undefined,
+    items: [],
+    queue: [],
+    queueIndex: 0,
+  };
+}
+
+export function initialLoginPreparation(): LoginPreparation {
+  return {
+    ahgora: 'idle',
+    channel: 'idle',
+    ahgoraDetail: 'Ahgora não conectado.',
+    channelDetail: 'Channel não conectado.',
+    autoSubmit: false,
   };
 }

@@ -1,3 +1,16 @@
+import {
+  captureSenior,
+  ChromeSeniorRunner,
+  SENIOR_ORIGIN,
+} from '../sites/senior';
+import {
+  requiredSources,
+  sourceBinding,
+  sourceConnectionsReady,
+  clearCapturedOperation,
+  initialLoginPreparation,
+} from '../application/types';
+import { SOURCE_NAMES, sourceForDate, type PunchSourceId } from '../domain';
 import { loadOperationData, saveOperationData } from '../application/storage';
 import { setRagCatalogOverrides } from '../application/rag';
 import {
@@ -25,7 +38,13 @@ import {
   type TabRole,
   type WriteProgress,
 } from '../application/types';
-import { civilDate, rangePeriod, resolvePeriod, type Clock } from '../domain';
+import {
+  civilDate,
+  rangePeriod,
+  resolvePeriod,
+  samePeriodRequest,
+  type Clock,
+} from '../domain';
 import notificationIconUrl from '../../assets/ponto_na_certi_logo.png?url';
 import type { IncomingMessage, UiResponse } from '../messaging/messages';
 import {
@@ -49,8 +68,9 @@ import {
 } from '../sites/target';
 import {
   EXISTING_LOGIN_TAB_AUTH_TIMEOUT_MS,
-  LOGIN_PERMISSION_ORIGINS,
-  LOGIN_SITES,
+  AHGORA_LOGIN_SITE,
+  CHANNEL_LOGIN_SITE,
+  SENIOR_LOGIN_SITE,
   isLoginSiteUrl,
   isLoginWorkPageUrl,
   probeLoginDocument,
@@ -196,14 +216,35 @@ async function registerGestureAndOpen(tab: chrome.tabs.Tab): Promise<void> {
   )
     return;
   const origin = pageOrigin(tab.url);
-  const binding: RegisteredTab = { id: tab.id, origin };
+  const site =
+    state.pendingRole === 'senior'
+      ? SENIOR_LOGIN_SITE
+      : state.pendingRole === 'source'
+        ? AHGORA_LOGIN_SITE
+        : CHANNEL_LOGIN_SITE;
+  if (!isLoginSiteUrl(site, tab.url))
+    throw new OperationalError('Registre a aba do sistema solicitado.');
+  let subjectKey: string | undefined;
+  if (state.pendingRole === 'senior') {
+    const probe = await new ChromeSeniorRunner(tab.id).probe();
+    if (!probe.ready || !probe.subjectKey)
+      throw new OperationalError('Conclua o login Senior primeiro.');
+    subjectKey = probe.subjectKey;
+  }
+  const binding: RegisteredTab = {
+    id: tab.id,
+    origin,
+    ...(subjectKey ? { subjectKey } : {}),
+  };
   const remainingIssues = clearTabConnectionIssues(state, [state.pendingRole]);
   const next: OperationData =
-    state.pendingRole === 'source'
+    state.pendingRole !== 'target'
       ? {
           ...state,
           revision: state.revision + 1,
-          sourceTab: binding,
+          ...(state.pendingRole === 'senior'
+            ? { seniorTab: binding }
+            : { sourceTab: binding }),
           pendingRole: undefined,
           tabConnectionIssues: remainingIssues,
           message:
@@ -218,7 +259,7 @@ async function registerGestureAndOpen(tab: chrome.tabs.Tab): Promise<void> {
           message:
             'Aba Channel registrada. O acesso será revalidado na captura.',
         };
-  await saveOperationData(next);
+  await saveOperationData(clearCapturedOperation(next));
   console.info('[PontoNaCerti][TabRegistration]', {
     status: 'ok',
     role: state.pendingRole,
@@ -250,11 +291,12 @@ async function processMessage(message: IncomingMessage): Promise<UiResponse> {
   if (message.type === 'START_OPERATION') {
     const previous = await loadOperationData();
     const empty = emptyOperation(message.operationId);
-    const connectionsReady = Boolean(previous?.sourceTab && previous.targetTab);
+    const connectionsReady = Boolean(previous?.targetTab);
     const state: OperationData = connectionsReady
       ? {
           ...empty,
           sourceTab: previous?.sourceTab,
+          seniorTab: previous?.seniorTab,
           targetTab: previous?.targetTab,
           loginPreparation: previous?.loginPreparation ?? {
             ahgora: 'ready',
@@ -263,8 +305,7 @@ async function processMessage(message: IncomingMessage): Promise<UiResponse> {
             channelDetail: 'Conexão preservada da operação anterior.',
             autoSubmit: false,
           },
-          message:
-            'Nova operação iniciada com as conexões Ahgora e Channel preservadas.',
+          message: 'Nova operação iniciada com as conexões preservadas.',
         }
       : empty;
     const preservedState: OperationData = previous?.calendarTab
@@ -279,6 +320,23 @@ async function processMessage(message: IncomingMessage): Promise<UiResponse> {
   if (state === undefined) return { ok: false, code: 'NO_ACTIVE_OPERATION' };
   assertCurrentOperation(message, state.operationId);
 
+  if (message.type === 'SET_OPERATION_PERIOD') {
+    if (state.inFlight !== undefined)
+      throw new OperationalError('Pare a ação atual antes de mudar o período.');
+    if (
+      samePeriodRequest(
+        state.requestedPeriod ?? state.config?.period,
+        message.period,
+      )
+    )
+      return success(state);
+    const updated = clearCapturedOperation({
+      ...state,
+      requestedPeriod: message.period,
+    });
+    await saveOperationData(updated);
+    return success(updated);
+  }
   if (message.type === 'STOP_CURRENT_ACTION') {
     const stopped = stopCurrentAction(state, message.action);
     await saveOperationData(stopped);
@@ -456,25 +514,57 @@ async function processMessage(message: IncomingMessage): Promise<UiResponse> {
   }
 
   if (message.type === 'CAPTURE_AND_COMPARE') {
+    if (
+      state.requestedPeriod &&
+      !samePeriodRequest(state.requestedPeriod, message.config.period)
+    )
+      throw new OperationalError(
+        'O período mudou. Confirme-o antes de capturar.',
+      );
     const settings = await loadExtensionSettings();
     if (
-      !state.sourceTab ||
+      !sourceConnectionsReady(
+        { ...state, requestedPeriod: message.config.period },
+        browserClock().today(),
+      ) ||
       !state.targetTab ||
       !settings.googleCalendar.connected
     )
       throw new OperationalError(
-        'Conecte Ahgora, Channel e Google Calendar antes de capturar e comparar.',
+        'Conecte as fontes do período, Channel e Google Calendar antes de capturar e comparar.',
       );
     cancellationRegistry.clear(state.operationId);
     const prepared: OperationData = {
       ...state,
       config: message.config,
+      requestedPeriod: message.config.period,
+      items: [],
+      queue: [],
+      queueIndex: 0,
+      sourceRows: [],
+      targetRows: [],
       phase: 'capturing',
       captureProgress: {
-        ahgora: {
-          status: 'running',
-          detail: 'Preparando a consulta autenticada do Ahgora…',
-        },
+        ahgora: requiredSources(
+          { ...state, requestedPeriod: message.config.period },
+          browserClock().today(),
+        ).includes('ahgora')
+          ? {
+              status: 'running',
+              detail: 'Preparando a consulta autenticada do Ahgora…',
+            }
+          : { status: 'done', detail: 'Não necessário neste período.' },
+        ...(requiredSources(
+          { ...state, requestedPeriod: message.config.period },
+          browserClock().today(),
+        ).includes('senior')
+          ? {
+              senior: {
+                status: 'running' as const,
+                detail: 'Preparando a consulta autenticada da Senior…',
+              },
+            }
+          : {}),
         channel: {
           status: 'running',
           detail: 'Preparando a consulta autenticada do Channel…',
@@ -637,7 +727,7 @@ async function processMessage(message: IncomingMessage): Promise<UiResponse> {
       next = {
         ...state,
         pendingRole: message.role,
-        message: `Vá até a aba ${message.role === 'source' ? 'Ahgora' : 'Channel'} e clique no ícone da extensão.`,
+        message: `Vá até a aba ${message.role === 'senior' ? 'Senior' : message.role === 'source' ? 'Ahgora' : 'Channel'} e clique no ícone da extensão.`,
       };
       break;
     case 'SET_ITEM_DECISION':
@@ -797,72 +887,80 @@ function channelDeleteFailureMessage(code: string): string {
   );
 }
 
+function requiredLoginSites(
+  state: OperationData,
+): readonly LoginSiteDefinition[] {
+  return [
+    ...requiredSources(state, browserClock().today()).map((provider) =>
+      provider === 'ahgora' ? AHGORA_LOGIN_SITE : SENIOR_LOGIN_SITE,
+    ),
+    CHANNEL_LOGIN_SITE,
+  ];
+}
+function siteStatusKey(
+  site: LoginSiteDefinition,
+): 'ahgora' | 'senior' | 'channel' {
+  return site.role === 'source'
+    ? 'ahgora'
+    : site.role === 'senior'
+      ? 'senior'
+      : 'channel';
+}
+function siteTab(
+  state: OperationData,
+  site: LoginSiteDefinition,
+): RegisteredTab | undefined {
+  return site.role === 'source'
+    ? state.sourceTab
+    : site.role === 'senior'
+      ? state.seniorTab
+      : state.targetTab;
+}
 async function discoverOpenAuthenticatedTabs(
   state: OperationData,
 ): Promise<OperationData> {
-  if (state.sourceTab && state.targetTab) return state;
-  const permissionGranted = await chrome.permissions.contains({
-    origins: [...LOGIN_PERMISSION_ORIGINS],
-  });
-  if (!permissionGranted) return state;
-
-  const [discoveredSource, discoveredTarget] = await Promise.all([
-    state.sourceTab
-      ? Promise.resolve(undefined)
-      : findAuthenticatedWorkTab(LOGIN_SITES[0]),
-    state.targetTab
-      ? Promise.resolve(undefined)
-      : findAuthenticatedWorkTab(LOGIN_SITES[1]),
-  ]);
-  if (!discoveredSource && !discoveredTarget) return state;
-
-  const latest = await loadOperationData();
-  if (latest?.operationId !== state.operationId)
-    throw new OperationalError('A operação foi substituída.');
-  const sourceTab = latest.sourceTab ?? discoveredSource;
-  const targetTab = latest.targetTab ?? discoveredTarget;
-  const discoveredRoles = [
-    ...(!latest.sourceTab && discoveredSource ? (['source'] as const) : []),
-    ...(!latest.targetTab && discoveredTarget ? (['target'] as const) : []),
-  ] satisfies readonly TabRole[];
-  if (discoveredRoles.length === 0) return latest;
-
-  const previous = latest.loginPreparation;
-  const loginPreparation: LoginPreparation = {
-    ahgora: sourceTab ? 'ready' : (previous?.ahgora ?? 'idle'),
-    channel: targetTab ? 'ready' : (previous?.channel ?? 'idle'),
-    ahgoraDetail: sourceTab
-      ? 'Aba do Ahgora já aberta e autenticada; conexão automática concluída.'
-      : (previous?.ahgoraDetail ?? 'A página do Ahgora ainda não foi aberta.'),
-    channelDetail: targetTab
-      ? 'Aba do Channel já aberta e autenticada; conexão automática concluída.'
-      : (previous?.channelDetail ??
-        'A página do Channel ainda não foi aberta.'),
-    autoSubmit: true,
-    permissionDenied: false,
-    ...(sourceTab === undefined ? {} : { sourceTabId: sourceTab.id }),
-    ...(targetTab === undefined ? {} : { targetTabId: targetTab.id }),
-  };
-  const next: OperationData = {
-    ...latest,
-    revision: latest.revision + 1,
-    ...(sourceTab === undefined ? {} : { sourceTab }),
-    ...(targetTab === undefined ? {} : { targetTab }),
-    loginPreparation,
-    tabConnectionIssues: clearTabConnectionIssues(latest, discoveredRoles),
-    message:
-      sourceTab && targetTab
-        ? 'Abas já abertas do Ahgora e Channel detectadas e conectadas automaticamente.'
-        : `A aba já aberta do ${sourceTab ? 'Ahgora' : 'Channel'} foi detectada e conectada automaticamente.`,
-  };
-  await saveOperationData(next);
-  await updateBadge(sourceTab && targetTab ? '' : '1');
-  console.info('[PontoNaCerti][OpenTabDiscovery]', {
-    status: sourceTab && targetTab ? 'complete' : 'partial',
-    sourceTabId: discoveredSource?.id,
-    targetTabId: discoveredTarget?.id,
-  });
-  return next;
+  if (state.inFlight) return state;
+  let current = state;
+  for (const site of requiredLoginSites(state)) {
+    if (siteTab(current, site)) continue;
+    if (
+      !(await chrome.permissions.contains({ origins: [...site.tabPatterns] }))
+    )
+      continue;
+    const binding = await findAuthenticatedWorkTab(site);
+    if (!binding) continue;
+    const latest = await loadOperationData();
+    if (
+      latest?.operationId !== current.operationId ||
+      latest.revision !== current.revision ||
+      latest.inFlight
+    )
+      return latest ?? current;
+    const key = siteStatusKey(site);
+    current = {
+      ...latest,
+      revision: latest.revision + 1,
+      ...(site.role === 'source'
+        ? { sourceTab: binding }
+        : site.role === 'senior'
+          ? { seniorTab: binding }
+          : { targetTab: binding }),
+      loginPreparation: {
+        ...(latest.loginPreparation ?? initialLoginPreparation()),
+        [key]: 'ready',
+        [`${key}Detail`]: 'Página autenticada conectada.',
+        ...(site.role === 'source'
+          ? { sourceTabId: binding.id }
+          : site.role === 'senior'
+            ? { seniorTabId: binding.id }
+            : { targetTabId: binding.id }),
+      },
+      tabConnectionIssues: clearTabConnectionIssues(latest, [site.role]),
+      message: 'Página autenticada conectada. Confira as fontes do período.',
+    };
+    await saveOperationData(current);
+  }
+  return current;
 }
 
 async function findOpenGoogleCalendarTab(): Promise<RegisteredTab | undefined> {
@@ -892,6 +990,21 @@ async function findAuthenticatedWorkTab(
     site,
   );
   for (const tab of candidates) {
+    if (site.role === 'senior') {
+      if (tab.id === undefined || !tab.url) continue;
+      try {
+        const probe = await new ChromeSeniorRunner(tab.id).probe();
+        if (probe.ready && probe.subjectKey)
+          return {
+            id: tab.id,
+            origin: SENIOR_ORIGIN,
+            subjectKey: probe.subjectKey,
+          };
+      } catch {
+        /* Try the next candidate. */
+      }
+      continue;
+    }
     if (
       tab.id === undefined ||
       tab.url === undefined ||
@@ -923,170 +1036,41 @@ async function openLoginPages(
   autoSubmit: boolean,
 ): Promise<OperationData> {
   assertActionNotStopped(state.operationId);
-  let current = await commitLoginPreparation(
-    state,
-    {
-      ahgora: 'opening',
-      channel: 'opening',
-      ahgoraDetail: 'Abrindo ou reutilizando a página de login do Ahgora…',
-      channelDetail: 'Abrindo ou reutilizando a página de login do Channel…',
-      autoSubmit,
-      permissionDenied: !autoSubmit,
-      ...(state.loginPreparation?.sourceTabId === undefined
-        ? {}
-        : { sourceTabId: state.loginPreparation.sourceTabId }),
-      ...(state.loginPreparation?.targetTabId === undefined
-        ? {}
-        : { targetTabId: state.loginPreparation.targetTabId }),
-    },
-    'Abrindo as páginas de autenticação…',
-  );
-  const [sourceResult, targetResult] = await Promise.allSettled([
-    getOrCreateLoginTab(state.loginPreparation?.sourceTabId, LOGIN_SITES[0]),
-    getOrCreateLoginTab(state.loginPreparation?.targetTabId, LOGIN_SITES[1]),
-  ] as const);
-  const sourceSelection =
-    sourceResult.status === 'fulfilled' ? sourceResult.value : undefined;
-  const targetSelection =
-    targetResult.status === 'fulfilled' ? targetResult.value : undefined;
-  const sourceTabId = sourceSelection?.tab.id;
-  const targetTabId = targetSelection?.tab.id;
-  assertActionNotStopped(state.operationId);
-  current = await commitLoginPreparation(
-    current,
-    {
-      ahgora: sourceTabId === undefined ? 'failed' : 'awaiting-user',
-      channel: targetTabId === undefined ? 'failed' : 'awaiting-user',
-      ahgoraDetail:
-        sourceTabId === undefined
-          ? 'Não foi possível abrir a página do Ahgora.'
-          : autoSubmit
-            ? sourceSelection?.reusedExistingTab
-              ? 'Aba existente encontrada; aguardando autenticação por até 10 segundos…'
-              : 'Nova aba aberta; aguardando o formulário e o preenchimento automático…'
-            : 'Permissão recusada. Faça login manualmente ou tente concedê-la novamente.',
-      channelDetail:
-        targetTabId === undefined
-          ? 'Não foi possível abrir a página do Channel.'
-          : autoSubmit
-            ? targetSelection?.reusedExistingTab
-              ? 'Aba existente encontrada; aguardando autenticação por até 10 segundos…'
-              : 'Nova aba aberta; aguardando o formulário e o preenchimento automático…'
-            : 'Permissão recusada. Faça login manualmente ou tente concedê-la novamente.',
-      autoSubmit,
-      permissionDenied: !autoSubmit,
-      ...(sourceTabId === undefined ? {} : { sourceTabId }),
-      ...(targetTabId === undefined ? {} : { targetTabId }),
-    },
-    autoSubmit
-      ? 'Páginas abertas. Aguardando o preenchimento automático para tentar o login…'
-      : 'A permissão foi recusada. Ela é necessária para detectar e concluir os logins automaticamente; conceda-a na nova tentativa ou faça o processo manual.',
-  );
-  if (!autoSubmit) return current;
-  assertActionNotStopped(state.operationId);
-
-  const [sourcePreparation, targetPreparation] = await Promise.all([
-    sourceSelection === undefined
-      ? Promise.resolve<LoginSitePreparationResult>({ status: 'failed' })
-      : authenticateLoginTab(
-          LOGIN_SITES[0],
-          sourceSelection,
-          state.operationId,
-        ),
-    targetSelection === undefined
-      ? Promise.resolve<LoginSitePreparationResult>({ status: 'failed' })
-      : authenticateLoginTab(
-          LOGIN_SITES[1],
-          targetSelection,
-          state.operationId,
-        ),
-  ]);
-  assertActionNotStopped(state.operationId);
-  const ahgora = sourcePreparation.status;
-  const channel = targetPreparation.status;
-  const preparedSourceTabId = sourcePreparation.tabId;
-  const preparedTargetTabId = targetPreparation.tabId;
-  const ready = ahgora === 'ready' && channel === 'ready';
-  const latestProgress = await loadOperationData();
-  const latestPreparation =
-    latestProgress?.operationId === state.operationId
-      ? latestProgress.loginPreparation
-      : undefined;
-  const prepared = await commitLoginPreparation(
-    current,
-    {
-      ahgora,
-      channel,
-      ahgoraDetail:
-        latestPreparation?.ahgoraDetail ?? loginDetail('Ahgora', ahgora),
-      channelDetail:
-        latestPreparation?.channelDetail ?? loginDetail('Channel', channel),
-      autoSubmit,
-      permissionDenied: false,
-      ...(preparedSourceTabId === undefined
-        ? {}
-        : { sourceTabId: preparedSourceTabId }),
-      ...(preparedTargetTabId === undefined
-        ? {}
-        : { targetTabId: preparedTargetTabId }),
-    },
-    ready
-      ? 'Logins detectados e páginas de trabalho abertas. Conectando as abas automaticamente…'
-      : 'Uma ou mais sessões ainda não foram confirmadas. Conclua o login indicado e tente novamente.',
-  );
-  return registerPreparedTabs(prepared);
+  let current = await discoverOpenAuthenticatedTabs(state);
+  for (const site of requiredLoginSites(current)) {
+    if (siteTab(current, site)) continue;
+    assertActionNotStopped(state.operationId);
+    const selection = await getOrCreateLoginTab(undefined, site);
+    const key = siteStatusKey(site);
+    const tabId = selection.tab.id;
+    current = await commitLoginPreparation(
+      current,
+      {
+        ...(current.loginPreparation ?? initialLoginPreparation()),
+        [key]: 'awaiting-user',
+        [`${key}Detail`]: `Conclua o login na página ${key === 'senior' ? 'Senior' : key === 'ahgora' ? 'Ahgora' : 'Channel'}.`,
+        autoSubmit,
+        permissionDenied: !autoSubmit,
+        ...(site.role === 'source'
+          ? { sourceTabId: tabId }
+          : site.role === 'senior'
+            ? { seniorTabId: tabId }
+            : { targetTabId: tabId }),
+      },
+      'Aguardando login nas páginas necessárias ao período.',
+    );
+    if (autoSubmit && site.role !== 'senior') {
+      await authenticateLoginTab(site, selection, state.operationId);
+      current = (await loadOperationData()) ?? current;
+    }
+  }
+  return discoverOpenAuthenticatedTabs(current);
 }
 
 async function registerPreparedTabs(
   state: OperationData,
 ): Promise<OperationData> {
-  assertActionNotStopped(state.operationId);
-  const preparation = state.loginPreparation;
-  if (!preparation?.autoSubmit) return state;
-  const permissionGranted = await chrome.permissions.contains({
-    origins: [...LOGIN_PERMISSION_ORIGINS],
-  });
-  if (!permissionGranted) return state;
-  const sourceTab =
-    preparation.ahgora === 'ready' && preparation.sourceTabId !== undefined
-      ? {
-          id: preparation.sourceTabId,
-          origin: new URL(LOGIN_SITES[0].destinationUrl).origin,
-        }
-      : undefined;
-  const targetTab =
-    preparation.channel === 'ready' && preparation.targetTabId !== undefined
-      ? {
-          id: preparation.targetTabId,
-          origin: new URL(LOGIN_SITES[1].destinationUrl).origin,
-        }
-      : undefined;
-  if (!sourceTab && !targetTab) return state;
-  const latest = await loadOperationData();
-  if (latest?.operationId !== state.operationId)
-    throw new OperationalError('A operação foi substituída.');
-  const next: OperationData = {
-    ...latest,
-    revision: latest.revision + 1,
-    ...(sourceTab === undefined ? {} : { sourceTab }),
-    ...(targetTab === undefined ? {} : { targetTab }),
-    tabConnectionIssues: clearTabConnectionIssues(latest, [
-      ...(sourceTab === undefined ? [] : (['source'] as const)),
-      ...(targetTab === undefined ? [] : (['target'] as const)),
-    ]),
-    message:
-      sourceTab && targetTab
-        ? 'Logins e registro automático concluídos. Configure a operação.'
-        : 'Uma aba foi registrada automaticamente. Use o registro manual somente na aba pendente.',
-  };
-  await saveOperationData(next);
-  console.info('[PontoNaCerti][AutomaticTabRegistration]', {
-    status: sourceTab && targetTab ? 'complete' : 'partial',
-    sourceRegistered: sourceTab !== undefined,
-    targetRegistered: targetTab !== undefined,
-  });
-  await updateBadge(sourceTab && targetTab ? '' : '1');
-  return next;
+  return discoverOpenAuthenticatedTabs(state);
 }
 
 async function commitLoginPreparation(
@@ -1293,7 +1277,16 @@ async function resumePreparedLogin(
   if (activeLoginAttempts.has(tabId)) return;
   const state = await loadOperationData();
   const preparation = state?.loginPreparation;
-  if (!state || !preparation?.autoSubmit) return;
+  if (!state || !preparation) return;
+  const sites = requiredLoginSites(state);
+  if (
+    preparation.seniorTabId === tabId &&
+    sites.some((site) => site.role === 'senior')
+  ) {
+    await discoverOpenAuthenticatedTabs(state);
+    return;
+  }
+  if (!preparation.autoSubmit) return;
   const role =
     preparation.sourceTabId === tabId
       ? 'source'
@@ -1309,12 +1302,13 @@ async function resumePreparedLogin(
     status === 'stopped'
   )
     return;
+  const site = sites.find((candidate) => candidate.role === role);
+  if (!site) return;
   const permissionGranted = await chrome.permissions.contains({
-    origins: [...LOGIN_PERMISSION_ORIGINS],
+    origins: [...site.tabPatterns],
   });
   if (!permissionGranted) return;
 
-  const site = role === 'source' ? LOGIN_SITES[0] : LOGIN_SITES[1];
   if (passive) {
     try {
       const [probe] = await chrome.scripting.executeScript({
@@ -1363,17 +1357,9 @@ async function resumePreparedLogin(
 async function monitorPreparedLogins(
   state: OperationData,
 ): Promise<OperationData> {
-  const preparation = state.loginPreparation;
-  if (!preparation?.autoSubmit) return state;
-  const pendingTabIds = [
-    preparation.ahgora === 'ready' ? undefined : preparation.sourceTabId,
-    preparation.channel === 'ready' ? undefined : preparation.targetTabId,
-  ];
-  for (const tabId of pendingTabIds) {
-    if (tabId !== undefined) await resumePreparedLogin(tabId, true);
-  }
-  const latest = await loadOperationData();
-  return latest?.operationId === state.operationId ? latest : state;
+  if (state.inFlight || cancellationRegistry.isRequested(state.operationId))
+    return state;
+  return discoverOpenAuthenticatedTabs(state);
 }
 
 async function openAndConfirmWorkPage(
@@ -1449,18 +1435,6 @@ async function getOrCreateLoginTab(
     tab: await chrome.tabs.create({ url: site.loginUrl }),
     reusedExistingTab: false,
   };
-}
-
-function loginDetail(siteName: string, status: LoginSiteStatus): string {
-  return {
-    idle: `${siteName} ainda não foi aberto.`,
-    opening: `Carregando ${siteName}…`,
-    'awaiting-user': `Aguardando a conclusão manual do login no ${siteName}.`,
-    submitted: `Login enviado ao ${siteName}; a sessão ainda não foi confirmada.`,
-    ready: `Login do ${siteName} confirmado; página de trabalho aberta.`,
-    failed: `Não foi possível abrir ${siteName}.`,
-    stopped: `Login do ${siteName} interrompido pelo usuário.`,
-  }[status];
 }
 
 async function reportLoginProgress(
@@ -1596,6 +1570,18 @@ function stopCurrentAction(
             preparation.channel === 'ready'
               ? preparation.channelDetail
               : 'Login interrompido pelo usuário.',
+          ...(preparation.senior === undefined
+            ? {}
+            : {
+                senior:
+                  preparation.senior === 'ready'
+                    ? ('ready' as const)
+                    : ('stopped' as const),
+                seniorDetail:
+                  preparation.senior === 'ready'
+                    ? preparation.seniorDetail
+                    : 'Login interrompido pelo usuário.',
+              }),
           autoSubmit: false,
         }
       : preparation;
@@ -1608,6 +1594,9 @@ function stopCurrentAction(
       ? {
           captureProgress: {
             ahgora: stopSystem(state.captureProgress.ahgora),
+            ...(state.captureProgress.senior
+              ? { senior: stopSystem(state.captureProgress.senior) }
+              : {}),
             channel: stopSystem(state.captureProgress.channel),
             ...(state.captureProgress.calendar === undefined
               ? {}
@@ -1685,6 +1674,28 @@ function coordinatorAdapters(
   const today = browserClock().today();
   return {
     today,
+    captureSenior: async (tabId, range) => {
+      const expected = await loadOperationData();
+      if (!expected?.seniorTab || expected.seniorTab.id !== tabId)
+        throw new OperationalError('Conecte a Senior.');
+      const binding = expected.seniorTab;
+      const check = async () => {
+        assertActionNotStopped(expected.operationId);
+        const latest = await loadOperationData();
+        if (
+          latest?.operationId !== expected.operationId ||
+          latest.revision !== expected.revision ||
+          latest.inFlight !== expected.inFlight
+        )
+          throw new Error('CANCELLED');
+        await assertTabBinding(binding);
+      };
+      return captureSenior(
+        new ChromeSeniorRunner(tabId, check),
+        range,
+        expected.seniorTab.subjectKey,
+      );
+    },
     captureSource: (tabId, period) =>
       captureAhgora(new ChromeSourceScriptRunner(), {
         tabId,
@@ -1759,21 +1770,23 @@ async function persistCaptureProgress(
   )
     return;
   const active =
-    progress.ahgora.status === 'running'
-      ? progress.ahgora.detail
-      : progress.channel.status === 'running'
-        ? progress.channel.detail
-        : progress.calendar?.status === 'running'
-          ? progress.calendar.detail
-          : progress.calendar?.status === 'failed'
+    progress.senior?.status === 'running'
+      ? progress.senior.detail
+      : progress.ahgora.status === 'running'
+        ? progress.ahgora.detail
+        : progress.channel.status === 'running'
+          ? progress.channel.detail
+          : progress.calendar?.status === 'running'
             ? progress.calendar.detail
-            : progress.comparison?.status === 'running'
-              ? progress.comparison.detail
-              : progress.comparison?.status === 'failed'
+            : progress.calendar?.status === 'failed'
+              ? progress.calendar.detail
+              : progress.comparison?.status === 'running'
                 ? progress.comparison.detail
-                : progress.channel.status === 'failed'
-                  ? progress.channel.detail
-                  : 'Captura e consulta concluídas; preparando a prévia.';
+                : progress.comparison?.status === 'failed'
+                  ? progress.comparison.detail
+                  : progress.channel.status === 'failed'
+                    ? progress.channel.detail
+                    : 'Captura e consulta concluídas; preparando a prévia.';
   await saveOperationData({
     ...current,
     captureProgress: progress,
@@ -1782,10 +1795,15 @@ async function persistCaptureProgress(
 }
 
 async function assertRegisteredTabs(state: OperationData): Promise<void> {
-  if (!state.sourceTab || !state.targetTab) {
-    throw new OperationalError('Registre as duas abas novamente.');
+  if (
+    !sourceConnectionsReady(state, browserClock().today()) ||
+    !state.targetTab
+  )
+    throw new OperationalError('Reconecte as fontes necessárias e o Channel.');
+  for (const provider of requiredSources(state, browserClock().today())) {
+    const binding = sourceBinding(state, provider);
+    if (binding) await assertTabBinding(binding);
   }
-  await assertTabBinding(state.sourceTab);
   await assertTabBinding(state.targetTab);
   if (
     calendarCaptureEnabled(state.config?.googleCalendar) &&
@@ -1815,6 +1833,13 @@ async function updateQueueBadge(state: OperationData): Promise<void> {
 
 async function assertTabBinding(binding: RegisteredTab): Promise<void> {
   const tab = await chrome.tabs.get(binding.id);
+  if (binding.subjectKey) {
+    const probe = await new ChromeSeniorRunner(binding.id).probe();
+    if (!probe.ready || probe.subjectKey !== binding.subjectKey)
+      throw new OperationalError(
+        'A sessão ou o colaborador da Senior mudou. Reconecte e capture novamente.',
+      );
+  }
   if (!tab.url || pageOrigin(tab.url) !== binding.origin)
     throw new OperationalError(
       'A aba navegou ou perdeu a origem registrada. Registre-a novamente.',
@@ -1822,6 +1847,7 @@ async function assertTabBinding(binding: RegisteredTab): Promise<void> {
 }
 
 interface PunchAlertRuntimeState {
+  readonly provider?: PunchSourceId;
   readonly lastNotificationSignature?: string;
 }
 
@@ -1868,15 +1894,27 @@ async function checkPunchAlerts(checkAt: Date): Promise<void> {
 
     const operation = await loadOperationData();
     if (operation?.inFlight !== undefined) return;
-    const sourceTab = await findAhgoraTab(operation?.sourceTab);
-    if (sourceTab === undefined) return;
-
-    const captured = await captureAhgora(new ChromeSourceScriptRunner(), {
-      tabId: sourceTab.id,
-      today: date,
-      period: resolvePeriod(rangePeriod(date, date), { today: () => date }),
-      timeoutMs: 20_000,
-    });
+    const provider = sourceForDate(date);
+    const binding =
+      provider === 'ahgora'
+        ? await findAhgoraTab(operation?.sourceTab)
+        : await findAuthenticatedWorkTab(SENIOR_LOGIN_SITE);
+    if (!binding) return;
+    const captured =
+      provider === 'ahgora'
+        ? await captureAhgora(new ChromeSourceScriptRunner(), {
+            tabId: binding.id,
+            today: date,
+            period: resolvePeriod(rangePeriod(date, date), {
+              today: () => date,
+            }),
+            timeoutMs: 20_000,
+          })
+        : await captureSenior(
+            new ChromeSeniorRunner(binding.id),
+            { start: date, end: date },
+            binding.subjectKey,
+          );
     if (!captured.ok) {
       console.info('[PontoNaCerti][PunchAlertCheck]', {
         status: 'skipped',
@@ -1886,10 +1924,21 @@ async function checkPunchAlerts(checkAt: Date): Promise<void> {
     }
 
     const day = captured.days.find((candidate) => candidate.date === date);
+    if (!day || day.times.length === 0) return;
+    if (
+      'issues' in captured &&
+      captured.issues.some(
+        (issue) =>
+          issue.date === date &&
+          issue.severity === 'blocked' &&
+          issue.code !== 'odd-punch-count',
+      )
+    )
+      return;
     const decision = evaluatePunchAlert({
       date,
       currentTime,
-      punchTimes: day?.times ?? [],
+      punchTimes: day.times,
       enabled: settings.punchAlerts.enabled,
     });
     const runtime = (await chrome.storage.local.get(PUNCH_ALERT_STATE_KEY))[
@@ -1904,10 +1953,16 @@ async function checkPunchAlerts(checkAt: Date): Promise<void> {
     }
     if (runtime?.lastNotificationSignature === decision.signature) return;
 
-    await showPunchAlertNotification(decision.title, decision.message, true);
+    await showPunchAlertNotification(
+      decision.title,
+      decision.message.replaceAll('Ahgora', SOURCE_NAMES[provider]),
+      true,
+      provider,
+    );
     await chrome.storage.local.set({
       [PUNCH_ALERT_STATE_KEY]: {
         lastNotificationSignature: decision.signature,
+        provider,
       } satisfies PunchAlertRuntimeState,
     });
   } catch (error: unknown) {
@@ -1941,6 +1996,7 @@ async function showPunchAlertNotification(
   title: string,
   message: string,
   soundEnabled: boolean,
+  provider: PunchSourceId = sourceForDate(localCivilDate(new Date())),
 ): Promise<void> {
   if (
     !(await chrome.permissions.contains({ permissions: ['notifications'] }))
@@ -1959,7 +2015,7 @@ async function showPunchAlertNotification(
     iconUrl: notificationIconUrl,
     title,
     message,
-    buttons: [{ title: 'Abrir Ahgora' }],
+    buttons: [{ title: `Abrir ${SOURCE_NAMES[provider]}` }],
     priority: 2,
     requireInteraction: true,
   });
@@ -1991,7 +2047,15 @@ async function playPunchAlertSound(): Promise<void> {
 
 async function focusAhgoraTab(): Promise<void> {
   const operation = await loadOperationData();
-  const binding = await findAhgoraTab(operation?.sourceTab);
+  const stored = (await chrome.storage.local.get(PUNCH_ALERT_STATE_KEY))[
+    PUNCH_ALERT_STATE_KEY
+  ] as PunchAlertRuntimeState | undefined;
+  const provider =
+    stored?.provider ?? sourceForDate(localCivilDate(new Date()));
+  const binding =
+    provider === 'ahgora'
+      ? await findAhgoraTab(operation?.sourceTab)
+      : await findAuthenticatedWorkTab(SENIOR_LOGIN_SITE);
   if (binding === undefined) return;
   const tab = await chrome.tabs.update(binding.id, { active: true });
   if (tab === undefined) return;
@@ -2081,7 +2145,36 @@ async function invalidateTab(
     await invalidateGoogleCalendarTab(state, reason);
     return;
   }
-  const roles = [
+  const sources = requiredSources(state, browserClock().today());
+  if (state.seniorTab?.id === tabId && !sources.includes('senior')) {
+    await saveOperationData({ ...state, seniorTab: undefined });
+    return;
+  }
+  if (state.sourceTab?.id === tabId && !sources.includes('ahgora')) {
+    await saveOperationData({ ...state, sourceTab: undefined });
+    return;
+  }
+  if (state.seniorTab?.id === tabId) {
+    cancellationRegistry.request(state.operationId);
+    const next = clearCapturedOperation({
+      ...state,
+      seniorTab: undefined,
+      loginPreparation: {
+        ...(state.loginPreparation ?? initialLoginPreparation()),
+        senior: 'failed',
+        seniorDetail: 'Reconecte a Senior e capture novamente.',
+        seniorTabId: undefined,
+      },
+      tabConnectionIssues: [
+        ...(state.tabConnectionIssues ?? []).filter((i) => i.role !== 'senior'),
+        { role: 'senior', reason },
+      ],
+      message: 'A conexão Senior mudou. Reconecte e capture novamente.',
+    });
+    await saveOperationData(next);
+    return;
+  }
+  const roles: TabRole[] = [
     ...(state.sourceTab?.id === tabId ? (['source'] as const) : []),
     ...(state.targetTab?.id === tabId ? (['target'] as const) : []),
   ] satisfies readonly TabRole[];
@@ -2124,7 +2217,8 @@ async function invalidateTab(
     ...(loginPreparation === undefined ? {} : { loginPreparation }),
     message: tabConnectionMessage(roles, reason),
   };
-  await saveOperationData(next);
+  cancellationRegistry.request(state.operationId);
+  await saveOperationData(clearCapturedOperation(next));
   await updateBadge('!');
 }
 
@@ -2135,16 +2229,27 @@ async function invalidateChangedOrigin(
   const state = await loadOperationData();
   if (!state) return;
   const binding =
-    state.sourceTab?.id === tabId
-      ? state.sourceTab
-      : state.targetTab?.id === tabId
-        ? state.targetTab
-        : state.calendarTab?.id === tabId
-          ? state.calendarTab
-          : undefined;
+    state.seniorTab?.id === tabId
+      ? state.seniorTab
+      : state.sourceTab?.id === tabId
+        ? state.sourceTab
+        : state.targetTab?.id === tabId
+          ? state.targetTab
+          : state.calendarTab?.id === tabId
+            ? state.calendarTab
+            : undefined;
   if (!binding) return;
   try {
-    if (pageOrigin(url) === binding.origin) return;
+    if (pageOrigin(url) === binding.origin) {
+      if (
+        !binding.subjectKey ||
+        new URL(url).pathname.split('/employee/')[1]?.split('/')[0] ===
+          binding.subjectKey
+      )
+        return;
+      await invalidateTab(tabId, 'subject-changed');
+      return;
+    }
   } catch {
     /* invalidate below */
   }
@@ -2191,7 +2296,8 @@ function tabConnectionDetail(
   role: TabRole,
   reason: TabConnectionIssueReason,
 ): string {
-  const name = role === 'source' ? 'Ahgora' : 'Channel';
+  const name =
+    role === 'senior' ? 'Senior' : role === 'source' ? 'Ahgora' : 'Channel';
   return reason === 'closed'
     ? `A aba do ${name} foi fechada. Reconecte-a para continuar.`
     : `A aba do ${name} saiu da origem registrada. Volte à página correta e reconecte-a.`;

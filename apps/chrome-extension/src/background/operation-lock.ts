@@ -100,10 +100,13 @@ function failRunningCaptureSystem(
   progress: NonNullable<OperationData['captureProgress']>,
   detail: string,
 ): NonNullable<OperationData['captureProgress']> {
+  if (progress.senior?.status === 'waiting')
+    progress = { ...progress, senior: { status: 'failed', detail } };
   if (
     progress.comparison?.status === 'running' ||
     (progress.comparison?.status === 'waiting' &&
       progress.ahgora.status !== 'running' &&
+      progress.senior?.status !== 'running' &&
       progress.channel.status !== 'running' &&
       progress.calendar?.status !== 'running')
   ) {
@@ -123,6 +126,9 @@ function failRunningCaptureSystem(
       ...progress,
       channel: { status: 'failed', detail },
     };
+  }
+  if (progress.senior?.status === 'running') {
+    return { ...progress, senior: { status: 'failed', detail } };
   }
   if (progress.ahgora.status === 'running') {
     return {

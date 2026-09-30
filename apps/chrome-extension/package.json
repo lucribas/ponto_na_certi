@@ -1,6 +1,6 @@
 {
   "name": "ponto-na-certi-extension",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -23,7 +23,8 @@
     "e2e:install": "playwright install chromium",
     "package": "npm run build && node scripts/package.mjs",
     "release:site": "npm run package && node scripts/build-release-site.mjs",
-    "convert:rag": "node scripts/convert-rag.mjs"
+    "convert:rag": "node scripts/convert-rag.mjs",
+    "test:senior:authenticated": "npm run build && node scripts/senior-authenticated-smoke.mjs"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "2.7.1",

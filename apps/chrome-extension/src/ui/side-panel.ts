@@ -1,4 +1,9 @@
 import {
+  type requiredSources,
+  sourceConnectionsReady,
+} from '../application/types';
+import { resolvePeriod, SOURCE_NAMES, planSourceSlices } from '../domain';
+import {
   civilDate,
   defaultPeriod,
   formatDurationMinutes,
@@ -87,7 +92,11 @@ import {
   requestGoogleCalendarApiAccess,
   requestGoogleCalendarTabAccess,
 } from '../sites/google-calendar';
-import { LOGIN_PERMISSION_ORIGINS } from '../sites/login';
+import {
+  AHGORA_LOGIN_SITE,
+  CHANNEL_LOGIN_SITE,
+  SENIOR_LOGIN_SITE,
+} from '../sites/login';
 
 // A única conversão DOM fica concentrada nesta fronteira; cada chamada informa o tipo nativo esperado.
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -99,6 +108,7 @@ const byId = <T extends HTMLElement>(id: string): T => {
 
 let state: PublicOperationState | undefined;
 let requestPending = false;
+let periodDirty = false;
 let loginPermissionPending = false;
 let transientMessage: string | undefined;
 let settings: ExtensionSettings = defaultExtensionSettings();
@@ -212,16 +222,7 @@ function readConfig(): OperationConfig {
   const defaultTag = settings.tags.find(
     (tag) => tag.id === settings.defaultTagId,
   );
-  const kind = byId<HTMLSelectElement>('period-kind').value;
-  const period =
-    kind === 'month'
-      ? monthPeriod(byId<HTMLInputElement>('month').value)
-      : kind === 'range'
-        ? rangePeriod(
-            civilDate(byId<HTMLInputElement>('start').value),
-            civilDate(byId<HTMLInputElement>('end').value),
-          )
-        : defaultPeriod();
+  const period = readPeriod();
   return {
     project: defaultTag?.project ?? '',
     activity: defaultTag?.activity ?? '',
@@ -237,6 +238,32 @@ function readConfig(): OperationConfig {
   };
 }
 
+function localToday() {
+  const now = new Date();
+  return civilDate(
+    `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+  );
+}
+function readPeriod(): OperationConfig['period'] {
+  const kind = byId<HTMLSelectElement>('period-kind').value;
+  return kind === 'month'
+    ? monthPeriod(byId<HTMLInputElement>('month').value)
+    : kind === 'range'
+      ? rangePeriod(
+          civilDate(byId<HTMLInputElement>('start').value),
+          civilDate(byId<HTMLInputElement>('end').value),
+        )
+      : defaultPeriod();
+}
+async function syncPeriod(): Promise<void> {
+  const period = readPeriod();
+  await send({
+    type: 'SET_OPERATION_PERIOD',
+    operationId: operationId(),
+    period,
+  });
+  periodDirty = JSON.stringify(readPeriod()) !== JSON.stringify(period);
+}
 function parseOverrides(value: string): readonly PunchOverride[] {
   return value
     .split(/\r?\n/)
@@ -271,6 +298,7 @@ async function startNewOperation(): Promise<void> {
     operationId: crypto.randomUUID(),
   });
   resetCapturePeriodToCurrentMonth();
+  await syncPeriod();
 }
 
 function render(): void {
@@ -293,6 +321,8 @@ function render(): void {
     state.phase === 'cancelled' ||
     state.phase === 'completed' ||
     state.phase === 'dry-run';
+  for (const id of ['period-kind', 'month', 'start', 'end'])
+    byId<HTMLInputElement>(id).disabled = busy;
   renderConfig();
   renderSettings();
   renderTemplateManager();
@@ -302,12 +332,37 @@ function render(): void {
   renderCaptureProgress();
   renderWriteProgress();
   renderTab('source', state.sourceTab?.id, state.pendingRole);
+  renderTab('senior', state.seniorTab?.id, state.pendingRole);
+  const providers = selectedSources();
+  for (const provider of ['ahgora', 'senior'] as const) {
+    byId(`login-${provider}-card`).hidden = !providers.includes(provider);
+    const row = byId(
+      `register-${provider === 'ahgora' ? 'source' : 'senior'}`,
+    ).closest<HTMLElement>('.tab-row');
+    if (row) row.hidden = !providers.includes(provider);
+    const progressCard = byId(`${provider}-progress`).parentElement;
+    if (progressCard) progressCard.hidden = !providers.includes(provider);
+  }
+  try {
+    const period = resolvePeriod(readPeriod(), { today: localToday });
+    byId('source-period-hint').textContent =
+      `${formatBrazilianDate(period.start)} a ${formatBrazilianDate(period.end)} · ${
+        planSourceSlices(period, localToday())
+          .map((slice) => SOURCE_NAMES[slice.provider])
+          .join(' + ') || 'Período futuro'
+      }`;
+  } catch {
+    byId('source-period-hint').textContent = 'Informe um período válido.';
+  }
   renderTab('target', state.targetTab?.id, state.pendingRole);
-  const bothRegistered = Boolean(state.sourceTab && state.targetTab);
+  const bothRegistered = Boolean(
+    sourceConnectionsReady(state, localToday()) && state.targetTab,
+  );
   const allConnected = bothRegistered && settings.googleCalendar.connected;
   const loginAttempted =
     state.loginPreparation !== undefined &&
-    (state.loginPreparation.ahgora !== 'idle' ||
+    (state.loginPreparation.senior !== undefined ||
+      state.loginPreparation.ahgora !== 'idle' ||
       state.loginPreparation.channel !== 'idle');
   byId<HTMLElement>('manual-registration').hidden =
     !loginAttempted || bothRegistered;
@@ -315,10 +370,10 @@ function render(): void {
     ? 'Abas registradas automaticamente pela permissão opcional concedida na etapa anterior.'
     : 'Se alguma aba não foi registrada automaticamente, escolha Registrar, vá até ela e clique no ícone da extensão.';
   byId<HTMLButtonElement>('apply').disabled =
-    busy || !allConnected || !state.canApply;
+    busy || periodDirty || !allConnected || !state.canApply;
   byId<HTMLButtonElement>('capture').disabled = busy || !allConnected;
   const advance = byId<HTMLButtonElement>('advance');
-  advance.disabled = busy || !allConnected;
+  advance.disabled = busy || periodDirty || !allConnected;
   advance.hidden =
     state.inFlight !== undefined ||
     (state.phase !== 'waiting-review' && state.phase !== 'partial');
@@ -446,13 +501,46 @@ function renderPreviewStatus(): void {
             : '';
 }
 
+function selectedSources(): ReturnType<typeof requiredSources> {
+  try {
+    return planSourceSlices(
+      resolvePeriod(readPeriod(), { today: localToday }),
+      localToday(),
+    ).map((slice) => slice.provider);
+  } catch {
+    return [];
+  }
+}
+
+function relevantConnectionIssues() {
+  const providers = selectedSources();
+  return (state?.tabConnectionIssues ?? []).filter(
+    (issue) =>
+      issue.role === 'target' ||
+      providers.includes(issue.role === 'source' ? 'ahgora' : 'senior'),
+  );
+}
+
+function relevantLoginStatuses() {
+  const preparation = state?.loginPreparation;
+  return [
+    ...selectedSources().map((provider) => preparation?.[provider]),
+    preparation?.channel,
+  ];
+}
+
 function renderLoginPreparation(): void {
   const preparation = state?.loginPreparation;
-  const connectionIssues = state?.tabConnectionIssues ?? [];
+  const connectionIssues = relevantConnectionIssues();
   renderLoginStatus(
     'source',
     preparation?.ahgora ?? 'idle',
     preparation?.ahgoraDetail ?? 'A página do Ahgora ainda não foi aberta.',
+  );
+  renderLoginStatus(
+    'senior',
+    preparation?.senior ?? 'idle',
+    preparation?.seniorDetail ?? 'A página Senior ainda não foi aberta.',
   );
   renderLoginStatus(
     'target',
@@ -460,11 +548,9 @@ function renderLoginPreparation(): void {
     preparation?.channelDetail ?? 'A página do Channel ainda não foi aberta.',
   );
   const denied = preparation?.permissionDenied === true;
-  const loginPending =
-    preparation?.ahgora === 'awaiting-user' ||
-    preparation?.ahgora === 'submitted' ||
-    preparation?.channel === 'awaiting-user' ||
-    preparation?.channel === 'submitted';
+  const loginPending = relevantLoginStatuses().some(
+    (status) => status === 'awaiting-user' || status === 'submitted',
+  );
   byId<HTMLButtonElement>('open-logins').textContent =
     connectionIssues.length > 0
       ? 'Reconectar abas necessárias'
@@ -475,14 +561,17 @@ function renderLoginPreparation(): void {
           : 'Detectar abas ou abrir logins';
   byId<HTMLElement>('login-permission-hint').textContent = preparation
     ? denied
-      ? 'A permissão aos hosts do Ahgora, Channel e Google Calendar é necessária para detectar e conectar as páginas automaticamente. Clique no botão acima para solicitá-la novamente.'
+      ? 'A permissão aos sites de ponto do período, Channel e Google Calendar é necessária para detectar e conectar as páginas automaticamente. Clique no botão acima para solicitá-la novamente.'
       : !preparation.autoSubmit &&
           (preparation.ahgora !== 'idle' || preparation.channel !== 'idle')
         ? 'Sem acesso opcional: conclua o login manualmente nas páginas abertas.'
         : ''
     : '';
   const connected = Boolean(
-    state?.sourceTab && state.targetTab && settings.googleCalendar.connected,
+    state &&
+    sourceConnectionsReady(state, localToday()) &&
+    state.targetTab &&
+    settings.googleCalendar.connected,
   );
   const loginCard = byId<HTMLDetailsElement>('login-card');
   if (connectionIssues.length > 0) loginCard.open = true;
@@ -494,7 +583,7 @@ function renderLoginPreparation(): void {
   summary.classList.toggle('ready', connected);
   const loginRunning =
     preparation?.autoSubmit === true &&
-    ([preparation.ahgora, preparation.channel] as const).some(
+    relevantLoginStatuses().some(
       (status) =>
         status === 'opening' ||
         status === 'submitted' ||
@@ -508,7 +597,7 @@ function renderLoginPreparation(): void {
 function renderConnectionAlert(): void {
   if (!state) return;
   const alert = byId<HTMLElement>('connection-alert');
-  const issues = state.tabConnectionIssues ?? [];
+  const issues = relevantConnectionIssues();
   alert.hidden = issues.length === 0;
   if (issues.length === 0) return;
 
@@ -519,8 +608,14 @@ function renderConnectionAlert(): void {
     output.textContent =
       'As abas do Ahgora e do Channel não estão mais conectadas. Reconecte-as antes de capturar ou enviar marcações.';
   } else {
-    const issue = sourceIssue ?? targetIssue;
-    const name = issue?.role === 'source' ? 'Ahgora' : 'Channel';
+    const issue =
+      sourceIssue ?? targetIssue ?? issues.find((i) => i.role === 'senior');
+    const name =
+      issue?.role === 'senior'
+        ? 'Senior'
+        : issue?.role === 'source'
+          ? 'Ahgora'
+          : 'Channel';
     const event =
       issue?.reason === 'origin-changed'
         ? 'saiu da página registrada'
@@ -532,7 +627,9 @@ function renderConnectionAlert(): void {
 function renderFlowOverview(): void {
   if (!state) return;
   const connected = Boolean(
-    state.sourceTab && state.targetTab && settings.googleCalendar.connected,
+    sourceConnectionsReady(state, localToday()) &&
+    state.targetTab &&
+    settings.googleCalendar.connected,
   );
   renderWorkflowAvailability(connected);
   const captured =
@@ -576,7 +673,7 @@ function renderWorkflowAvailability(connected: boolean): void {
     if (summary)
       summary.title = connected
         ? ''
-        : 'Conclua a conexão com Ahgora, Channel e Google Calendar para liberar esta etapa.';
+        : 'Conclua a conexão com as fontes de ponto, Channel e Google Calendar para liberar esta etapa.';
 
     const link = document.querySelector<HTMLAnchorElement>(
       `.flow-overview a[aria-controls="${cardId}"]`,
@@ -593,7 +690,7 @@ function renderWorkflowAvailability(connected: boolean): void {
 }
 
 function renderLoginStatus(
-  role: 'source' | 'target',
+  role: TabRole,
   status: NonNullable<PublicOperationState['loginPreparation']>[
     'ahgora' | 'channel'],
   detail: string,
@@ -636,6 +733,13 @@ function renderCaptureProgress(): void {
   renderSystemProgress(
     'ahgora',
     progress?.ahgora ?? {
+      status: 'waiting',
+      detail: 'A captura ainda não começou.',
+    },
+  );
+  renderSystemProgress(
+    'senior',
+    progress?.senior ?? {
       status: 'waiting',
       detail: 'A captura ainda não começou.',
     },
@@ -709,7 +813,7 @@ function renderWriteProgress(): void {
 }
 
 function renderSystemProgress(
-  system: 'ahgora' | 'channel' | 'calendar' | 'comparison',
+  system: 'ahgora' | 'senior' | 'channel' | 'calendar' | 'comparison',
   progress: SystemProgress,
 ): void {
   const bar = byId<HTMLProgressElement>(`${system}-progress`);
@@ -3079,20 +3183,21 @@ function renderAutomaticTagName(): void {
 }
 
 function renderConfig(): void {
+  if (periodDirty) return;
   const config = state?.config;
-  if (!config) return;
-  const kind = config.period.kind;
+  const period = state?.requestedPeriod ?? config?.period;
+  if (!period) return;
+  const kind = period.kind;
   byId<HTMLSelectElement>('period-kind').value = kind;
   byId('month-field').hidden = kind !== 'month';
   byId('start-field').hidden = kind !== 'range';
   byId('end-field').hidden = kind !== 'range';
-  if (kind === 'month')
-    byId<HTMLInputElement>('month').value = config.period.month;
+  if (kind === 'month') byId<HTMLInputElement>('month').value = period.month;
   if (kind === 'range') {
-    byId<HTMLInputElement>('start').value = config.period.start;
-    byId<HTMLInputElement>('end').value = config.period.end;
+    byId<HTMLInputElement>('start').value = period.start;
+    byId<HTMLInputElement>('end').value = period.end;
   }
-  byId<HTMLTextAreaElement>('overrides').value = config.overrides
+  byId<HTMLTextAreaElement>('overrides').value = (config?.overrides ?? [])
     .map((override) => `${override.date}=${override.times.join(',')}`)
     .join('\n');
 }
@@ -3124,7 +3229,7 @@ function renderPreview(): void {
       body.className = 'item-body';
       const title = document.createElement('p');
       title.className = 'item-title';
-      title.textContent = `${formatBrazilianDate(item.date)} · Ahgora ${item.ahgoraDuration}`;
+      title.textContent = `${formatBrazilianDate(item.date)} · ${item.sourceProvider ? SOURCE_NAMES[item.sourceProvider] : 'Ponto'} ${item.sourceDuration}`;
       const meta = document.createElement('p');
       meta.className = 'meta';
       const displayStatus =
@@ -4221,7 +4326,7 @@ function itemAllocationDuration(
   item: PublicOperationState['items'][number],
 ): string {
   return item.editingBalanceMinutes === undefined
-    ? item.ahgoraDuration
+    ? item.sourceDuration
     : formatDurationMinutes(item.editingBalanceMinutes);
 }
 
@@ -4231,7 +4336,7 @@ function hasPositiveChannelBalance(
   if (item.channelDuration === undefined) return false;
   try {
     return (
-      parseDurationMinutes(item.ahgoraDuration) >
+      parseDurationMinutes(item.sourceDuration) >
       parseDurationMinutes(item.channelDuration)
     );
   } catch {
@@ -4322,10 +4427,12 @@ async function act(message: IncomingMessage): Promise<void> {
 
 async function captureFromUi(): Promise<void> {
   try {
+    const config = readConfig();
+    await syncPeriod();
     await send({
       type: 'CAPTURE_AND_COMPARE',
       operationId: operationId(),
-      config: readConfig(),
+      config,
     });
     if (state?.sourceRows !== undefined && state.inFlight === undefined) {
       const reviewCard = byId<HTMLDetailsElement>('review-card');
@@ -4697,6 +4804,31 @@ byId<HTMLSelectElement>('period-kind').addEventListener('change', (event) => {
   byId('start-field').hidden = kind !== 'range';
   byId('end-field').hidden = kind !== 'range';
 });
+for (const id of ['period-kind', 'month', 'start', 'end']) {
+  byId(id).addEventListener('input', () => {
+    periodDirty = true;
+    byId<HTMLButtonElement>('apply').disabled = true;
+    byId<HTMLButtonElement>('advance').disabled = true;
+    render();
+  });
+  byId(id).addEventListener('change', () => {
+    periodDirty = true;
+    void syncPeriod()
+      .then(() => render())
+      .catch(() => {
+        /* An unfinished interval remains editable. */
+      });
+  });
+}
+byId('register-senior').addEventListener(
+  'click',
+  () =>
+    void act({
+      type: 'SET_PENDING_ROLE',
+      operationId: operationId(),
+      role: 'senior',
+    }),
+);
 chrome.storage.onChanged.addListener((_changes, area) => {
   if (area === 'session') void refresh();
   if (area === 'local')
@@ -5381,62 +5513,96 @@ async function registerAhgora(): Promise<void> {
 
 async function openLoginPages(): Promise<void> {
   if (loginPermissionPending) return;
+  let providers: ReturnType<typeof requiredSources>;
+  try {
+    providers = planSourceSlices(
+      resolvePeriod(readPeriod(), { today: localToday }),
+      localToday(),
+    ).map((slice) => slice.provider);
+    if (!providers.length)
+      throw new Error('Escolha um período com datas já decorridas.');
+  } catch {
+    transientMessage =
+      'Informe um período válido com datas já decorridas antes de conectar.';
+    render();
+    return;
+  }
   loginPermissionPending = true;
   calendarPending = true;
   render();
-  let autoSubmit = false;
-  let calendarAccessGranted = false;
-  const tabMode = settings.googleCalendar.accessMode === 'tab';
-  const calendarOrigin = tabMode
-    ? GOOGLE_CALENDAR_WEB_ORIGIN
-    : GOOGLE_CALENDAR_API_ORIGIN;
   try {
-    await chrome.permissions.request({
-      origins: [...LOGIN_PERMISSION_ORIGINS, calendarOrigin],
-    });
-    [autoSubmit, calendarAccessGranted] = await Promise.all([
-      chrome.permissions.contains({ origins: [...LOGIN_PERMISSION_ORIGINS] }),
-      chrome.permissions.contains({ origins: [calendarOrigin] }),
-    ]);
-  } catch (error: unknown) {
-    logPanelFailure('REQUEST_LOGIN_PERMISSION', error);
-  }
-  if (calendarAccessGranted || tabMode) {
+    const origins = [
+      ...providers.flatMap((provider) =>
+        provider === 'ahgora'
+          ? [...AHGORA_LOGIN_SITE.tabPatterns]
+          : [...SENIOR_LOGIN_SITE.tabPatterns],
+      ),
+      ...CHANNEL_LOGIN_SITE.tabPatterns,
+    ];
+    let autoSubmit = false;
+    let calendarAccessGranted = false;
+    const tabMode = settings.googleCalendar.accessMode === 'tab';
+    const calendarOrigin = tabMode
+      ? GOOGLE_CALENDAR_WEB_ORIGIN
+      : GOOGLE_CALENDAR_API_ORIGIN;
     try {
-      await send({
-        type: 'CONNECT_GOOGLE_CALENDAR',
-        operationId: operationId(),
+      await chrome.permissions.request({
+        origins: [...origins, calendarOrigin],
       });
-      useSettings(await loadExtensionSettings());
+      [autoSubmit, calendarAccessGranted] = await Promise.all([
+        chrome.permissions.contains({ origins: origins }),
+        chrome.permissions.contains({ origins: [calendarOrigin] }),
+      ]);
     } catch (error: unknown) {
-      calendarManagerMessage =
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível conectar o Google Calendar.';
-      logPanelFailure('CONNECT_GOOGLE_CALENDAR', error);
+      logPanelFailure('REQUEST_LOGIN_PERMISSION', error);
     }
+    await syncPeriod();
+    if (calendarAccessGranted || tabMode) {
+      try {
+        await send({
+          type: 'CONNECT_GOOGLE_CALENDAR',
+          operationId: operationId(),
+        });
+        useSettings(await loadExtensionSettings());
+      } catch (error: unknown) {
+        calendarManagerMessage =
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível conectar o Google Calendar.';
+        logPanelFailure('CONNECT_GOOGLE_CALENDAR', error);
+      }
+    }
+    calendarPending = false;
+    loginPermissionPending = false;
+    await act({
+      type: 'OPEN_LOGIN_PAGES',
+      operationId: operationId(),
+      autoSubmit,
+    });
+    useSettings(await loadExtensionSettings());
+    render();
+  } catch (error: unknown) {
+    transientMessage =
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível iniciar a conexão.';
+  } finally {
+    calendarPending = false;
+    loginPermissionPending = false;
+    render();
   }
-  calendarPending = false;
-  loginPermissionPending = false;
-  await act({
-    type: 'OPEN_LOGIN_PAGES',
-    operationId: operationId(),
-    autoSubmit,
-  });
-  useSettings(await loadExtensionSettings());
-  render();
 }
 
 async function monitorLoginStatus(): Promise<void> {
   const preparation = state?.loginPreparation;
   const pending =
-    preparation?.autoSubmit === true &&
-    (preparation.ahgora === 'opening' ||
-      preparation.ahgora === 'awaiting-user' ||
-      preparation.ahgora === 'submitted' ||
-      preparation.channel === 'opening' ||
-      preparation.channel === 'awaiting-user' ||
-      preparation.channel === 'submitted');
+    preparation !== undefined &&
+    relevantLoginStatuses().some(
+      (status) =>
+        status === 'opening' ||
+        status === 'awaiting-user' ||
+        status === 'submitted',
+    );
   if (
     !pending ||
     !state ||
@@ -5478,5 +5644,7 @@ void (async () => {
   await refresh().catch(() => undefined);
   if (state === undefined)
     await send({ type: 'START_OPERATION', operationId: crypto.randomUUID() });
+  await syncPeriod();
+  render();
   await discoverOpenTabs();
 })();

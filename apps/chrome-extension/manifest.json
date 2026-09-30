@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Ponto na Certi",
-  "description": "Sincroniza batidas do Ahgora e eventos do Google Calendar com marcações de projetos no Channel.",
-  "version": "0.1.0",
+  "description": "Sincroniza batidas do Ahgora e da Senior e eventos do Google Calendar com marcações de projetos no Channel.",
+  "version": "0.2.1",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -15,6 +15,7 @@
   ],
   "optional_permissions": ["notifications"],
   "optional_host_permissions": [
+    "https://gestaodoponto.certi.org.br/*",
     "https://www.ahgora.com.br/*",
     "https://app.ahgora.com.br/*",
     "https://channel.certi.org.br/*",
